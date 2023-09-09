@@ -27,5 +27,7 @@ class Product_images(models.Model):
     product_images = models.ImageField()
 
 
+class Categories(models.Model):
+    category_name = models.CharField(max_length=100)
 
-    
+
