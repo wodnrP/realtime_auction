@@ -22,4 +22,10 @@ class Products(models.Model):
         super(Products, self).save(*args, **kwargs)
 
 
+class Product_images(models.Model):
+    products_id = models.ForeignKey(Products, on_delete=models.CASCADE)
+    product_images = models.ImageField()
+
+
+
     
