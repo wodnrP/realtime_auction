@@ -30,3 +30,7 @@ class ProductImages(models.Model):
 class Categories(models.Model):
     category_name = models.CharField(max_length=100)
 
+
+class CategoryItem(models.Model):
+    category_id = models.ForeignKey(Categories, on_delete=models.CASCADE)
+    product_id = models.ForeignKey(Products, on_delete=models.CASCADE)
