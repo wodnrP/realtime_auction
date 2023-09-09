@@ -22,12 +22,11 @@ class Products(models.Model):
         super(Products, self).save(*args, **kwargs)
 
 
-class Product_images(models.Model):
+class ProductImages(models.Model):
     products_id = models.ForeignKey(Products, on_delete=models.CASCADE)
     product_images = models.ImageField()
 
 
 class Categories(models.Model):
     category_name = models.CharField(max_length=100)
-
 
