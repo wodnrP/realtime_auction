@@ -7,7 +7,7 @@ class Chatting(models.Model):
     class Message(models.Model):
         sender_id=models.ForeignKey(User,on_delete=models.CASCADE)
         message_type=models.TextField()
-        content=models.TextField()
+        message_content=models.TextField()
 
         class Meta:
             abstract=True
