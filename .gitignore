@@ -18,4 +18,5 @@ my_settings.py
 db/
 /.vscode
 /venv
+.venv
 
