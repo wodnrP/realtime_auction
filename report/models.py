@@ -7,7 +7,7 @@ from django.db import models
 reporter : 신고자
 report_type : 신고 유형 (PROFANITY:욕설, ADVERTISEMENT:광고, SPAM:스팸 및 도배)
 report_at : 신고 시간
-report_content : 신고 내용 (채팅방에서 불러오기) - ForeignKey로 연결 할지 or TextField로 저장 할지
+report_content : 신고 내용 (채팅방에서 불러오기) TextField로 저장 할지
 """
 
 
