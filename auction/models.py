@@ -8,8 +8,8 @@ from product.models import Products
 auction_id : 경매가 진행되는 실시간 채팅방 고유 번호 / pk로 잡혀서 따로 필요 없을듯
 auction_users : 경매 물건을 파는 사람 == 채팅방 주인
 auction_chat_name : 경매 채팅방 이름(경매 제품 이름)
-auction_chat_start_at : 경매 시작 시간
-auction_chat_finish_at : 경매 마감 시간(user가 경매를 종료 했을 경우 마감 시간이 설정 됨)
+auction_chat_open_at : 경매 시작 시간
+auction_chat_close_at : 경매 마감 시간(user가 경매를 종료 했을 경우 마감 시간이 설정 됨)
 """
 
 
