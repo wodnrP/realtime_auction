@@ -31,4 +31,4 @@ class Auction(models.Model):
         self.save()
 
     class Meta:
-        ordering = "-auction_chat_open_at"
+        ordering = ["-auction_chat_open_at"]
