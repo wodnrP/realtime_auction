@@ -40,6 +40,7 @@ class Report(models.Model):
         "user.User",
         on_delete=models.CASCADE,
         related_name="suspects",
+        blank=False,
     )
     report_content = models.TextField()
 
