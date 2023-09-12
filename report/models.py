@@ -18,6 +18,7 @@ class Report(models.Model):
         "user.User",
         on_delete=models.SET_NULL,
         related_name="reporter",
+        null=True,
     )
     report_type = models.CharField(
         choices=ReportTypeChoices.choices,
@@ -34,4 +35,4 @@ class Report(models.Model):
 
     class Meta:
         verbose_name_plural = "Report"
-        ordering = "-report_at"
+        ordering = ["-report_at"]
