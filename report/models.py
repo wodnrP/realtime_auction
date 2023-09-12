@@ -10,9 +10,9 @@ report_content : 신고 내용 (채팅방에서 불러오기)
 
 class Report(models.Model):
     class ReportTypeChoices(models.TextChoices):
-        PROFANITY = "profanity", "Profanity"
-        ADVERTISEMENT = "advertisement", "Advertisement"
-        SPAM = "spam", "Spam"
+        PROFANITY = "profanity", "욕설"
+        ADVERTISEMENT = "advertisement", "광고"
+        SPAM = "spam", "스팸 및 도배"
 
     reporter = models.ForeignKey(
         "user.User",
@@ -34,5 +34,5 @@ class Report(models.Model):
         return self.report_type
 
     class Meta:
-        verbose_name_plural = "Report"
+        verbose_name_plural = "Reports"
         ordering = ["-report_at"]
