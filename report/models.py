@@ -26,7 +26,6 @@ class Report(models.Model):
     )
     report_at = models.DateTimeField(
         auto_now_add=True,
-        ordering=["-report_at"],
     )
     report_content = models.TextField()
 
@@ -35,3 +34,4 @@ class Report(models.Model):
 
     class Meta:
         verbose_name_plural = "Report"
+        ordering = "-report_at"
