@@ -1,5 +1,6 @@
 from djongo import models
-
+from user.models import User
+from auction.models import Auction 
 # Create your models here.
 class Chatting(models.Model):
     auction_id=models.ForeignKey(Auction,on_delete=models.CASCADE)
