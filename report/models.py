@@ -34,6 +34,7 @@ class Report(models.Model):
         "auction.Auction",
         on_delete=models.SET_NULL,
         null=True,
+        default=None,
     )
     report_suspect = models.ForeignKey(
         "user.User",
