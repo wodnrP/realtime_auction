@@ -56,3 +56,17 @@ class CheckAuthNumberView(APIView):
                 return Response({"msg": "번호가 일치하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"msg": "저장된 번호가 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+
+class SignUpView(APIView):
+    '''
+    인증번호 일치 확인 후 유저 추가 정보 설정 API
+    '''
+    def put(self, request):
+        phone_number = request.data['phone_number']
+        current_user = get_object_or_404(User, phone_number=phone_number)
+        user_serializer = UserSerializer(current_user,data=request.data)
+        if user_serializer.is_valid():
+            user_serializer.save()
+            return Response({"msg": user_serializer.data}, status = status.HTTP_200_OK)
+        else:
+            return Response({"error": user_serializer.errors}, status = status.HTTP_400_BAD_REQUEST)
