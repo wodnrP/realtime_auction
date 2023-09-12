@@ -4,8 +4,8 @@ from django.utils import timezone
 
 
 class Products(models.Model):
-    buyer_id = models.OneToOneField("auctions", on_delete=models.CASCADE, null=True, blank=True)
-    seller_id = models.OneToOneField("users", on_delete=models.CASCADE)
+    buyer_id = models.OneToOneField("auction.auction", on_delete=models.CASCADE, null=True, blank=True)
+    seller_id = models.OneToOneField("user.user", on_delete=models.CASCADE)
     product_name = models.CharField(max_length=100)
     product_price = models.CharField(max_length=100)
     product_content = models.CharField(max_length=100)

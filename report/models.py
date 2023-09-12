@@ -16,7 +16,7 @@ class Report(models.Model):
 
     reporter = models.ForeignKey(
         "user.User",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="reporter",
         null=True,
     )
