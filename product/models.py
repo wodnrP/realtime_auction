@@ -7,7 +7,7 @@ from user.models import User
 
 class Products(models.Model):
     buyer_id = models.OneToOneField(Auction, on_delete=models.CASCADE, null=True, blank=True)
-    seller_id = models.OneToOneField(User, on_delete=models.CASCADE)
+    seller_id = models.ForeignKey(User, on_delete=models.CASCADE)
     product_name = models.CharField(max_length=100)
     product_price = models.CharField(max_length=100)
     product_content = models.CharField(max_length=100)
