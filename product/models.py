@@ -1,12 +1,10 @@
 from djongo import models
 from django.utils import timezone
-from auction.models import Auction
 from user.models import User
 # Create your models here.
 
 
 class Products(models.Model):
-    buyer_id = models.OneToOneField(Auction, on_delete=models.CASCADE, null=True, blank=True)
     seller_id = models.ForeignKey(User, on_delete=models.CASCADE)
     product_name = models.CharField(max_length=100)
     product_price = models.CharField(max_length=100)
