@@ -1,6 +1,7 @@
 from django.urls import path
-from django.conf import settings
+
+from user import views
 
 urlpatterns = [
-    path(),    
+    path('sms/',views.CheckPhoneNumberVeiw.as_view(), name='send-sms'),    
 ]
