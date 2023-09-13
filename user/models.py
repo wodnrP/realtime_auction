@@ -29,7 +29,7 @@ class User(AbstractBaseUser):
     username = models.CharField(max_length=255, null=True, verbose_name="사용자 이름")
     phone_number = models.CharField(max_length=255, unique=True, verbose_name="핸드폰 번호")
     auth_number = models.CharField(max_length=4, null=True,verbose_name="핸드폰인증 번호")
-    nickname = models.CharField(max_length=255, unique=True, verbose_name="닉네임")
+    nickname = models.CharField(max_length=255, blank=True, verbose_name="닉네임")
     address = models.TextField(verbose_name="주소")
     profile_image = models.ImageField(
         upload_to="profile_image", blank=True, verbose_name="프로필 사진"
