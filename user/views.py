@@ -22,17 +22,17 @@ class CheckPhoneNumberView(APIView):
         signature, timestamp = make_signature()
 
         random_number = str(random.randrange(1000, 10000))
-        if phone_serializer.is_valid():
-            phone_number = request.data["phone_number"]
+        phone_number = request.data["phone_number"]
+        user_exists_check = User.objects.using('default').filter(phone_number=phone_number).first()
+        
+        if user_exists_check:
+            return Response({"msg": "이미 존재하는 유저입니다."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if phone_serializer.is_valid():    
             res = send_sms(signature, timestamp, random_number, phone_number)
 
             if res.status_code >= 200 and res.status_code < 300:
-                current_user = get_object_or_404(User, phone_number=phone_number)
-                if current_user:
-                    User.objects.update(auth_number = random_number)
-                else:
-                    User.objects.create(phone_number=phone_number, auth_number=random_number)
-                
+                User.objects.create(phone_number=phone_number, auth_number=random_number)
                 return Response({"msg": "메세지 전송 완료"}, status=res.status_code)
             else:
                 return Response({"msg": "메세지 전송 실패"}, status=res.status_code)
