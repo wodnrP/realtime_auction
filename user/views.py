@@ -2,12 +2,19 @@ import random
 import json
 
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.hashers import check_password
+from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from user.models import User
-from user.serializers import UserSerializer, PhoneNumberSerializer
+from user.serializers import (
+    UserSerializer,
+    PhoneNumberSerializer,
+    MyTokenObtainPairSerializer,
+)
 
 from user.naver_sms.utils import make_signature, send_sms
 
@@ -58,15 +65,51 @@ class CheckAuthNumberView(APIView):
             return Response({"msg": "저장된 번호가 없습니다."}, status=status.HTTP_404_NOT_FOUND)
 
 class SignUpView(APIView):
-    '''
+    """
     인증번호 일치 확인 후 유저 추가 정보 설정 API
-    '''
+    """
+
     def put(self, request):
-        phone_number = request.data['phone_number']
+        phone_number = request.data["phone_number"]
         current_user = get_object_or_404(User, phone_number=phone_number)
-        user_serializer = UserSerializer(current_user,data=request.data)
+        user_serializer = UserSerializer(current_user, data=request.data)
         if user_serializer.is_valid():
             user_serializer.save()
-            return Response({"msg": user_serializer.data}, status = status.HTTP_200_OK)
+            return Response({"msg": user_serializer.data}, status=status.HTTP_200_OK)
         else:
-            return Response({"error": user_serializer.errors}, status = status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": user_serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class LoginView(APIView):
+    def post(self, request):
+        phone_number = request.data["phone_number"]
+        password = request.data["password"]
+
+        user_check = (
+            User.objects.using("default").filter(phone_number=phone_number).first()
+        )
+
+        if not user_check:
+            return Response(
+                {"msg": "존재하지 않는 유저입니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not check_password(password, user_check.password):
+            return Response(
+                {"msg": "비밀번호가 일치하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = authenticate(phone_number=phone_number, password=password)
+        print(user)
+
+        if user.is_authenticated:
+            token = MyTokenObtainPairSerializer.get_token(user)
+            refrech_token = str(token)
+            access_token = str(token.access_token)
+
+            return Response(
+                {"msg": "로그인 성공", "access": access_token, "refresh": refrech_token},
+                status=status.HTTP_200_OK,
+            )

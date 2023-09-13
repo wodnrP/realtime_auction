@@ -1,6 +1,7 @@
 import re
 
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from user.models import User
 
@@ -30,3 +31,11 @@ class PhoneNumberSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("핸드폰 번호는 '-' 없이 번호만 작성해주세요.")
 
         return data
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['phone_number'] = user.phone_number        
+        return token
+    
