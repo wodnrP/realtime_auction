@@ -1,5 +1,4 @@
 import random
-import json
 
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import check_password
@@ -7,7 +6,6 @@ from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView
 
 from user.models import User
 from user.serializers import (
@@ -30,11 +28,10 @@ class CheckPhoneNumberView(APIView):
 
         random_number = str(random.randrange(1000, 10000))
         phone_number = request.data["phone_number"]
-        user_exists_check = (
-            User.objects.using("default").filter(phone_number=phone_number).first()
-        )
+        user_check = User.objects.filter(phone_number=phone_number).exists()
 
-        if user_exists_check:
+
+        if user_check:
             return Response(
                 {"msg": "이미 존재하는 유저입니다."}, status=status.HTTP_400_BAD_REQUEST
             )
@@ -63,9 +60,9 @@ class CheckAuthNumberView(APIView):
         phone_number = request.data["phone_number"]
         input_number = request.data["input_number"]
 
-        current_user = get_object_or_404(User, phone_number=phone_number)
-        if current_user:
-            if current_user.auth_number == input_number:
+        user_check = User.objects.filter(phone_number=phone_number).exists()
+        if user_check:
+            if user_check.auth_number == input_number:
                 return Response({"msg": "인증이 완료되었습니다."}, status=status.HTTP_200_OK)
             else:
                 return Response(
@@ -99,7 +96,7 @@ class LoginView(APIView):
         password = request.data["password"]
 
         user_check = (
-            User.objects.using("default").filter(phone_number=phone_number).first()
+            User.objects.filter(phone_number=phone_number).exists()
         )
 
         if not user_check:
