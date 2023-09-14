@@ -9,7 +9,7 @@ class Products(models.Model):
     seller_id = models.ForeignKey(User, on_delete=models.CASCADE)
     product_name = models.CharField(max_length=100)
     product_price = models.CharField(max_length=100)
-    product_content = models.CharField(max_length=100)
+    product_content = models.TextField()
     auction_start_at = models.DateTimeField()
     auction_end_at = models.DateTimeField()
     auction_active = models.BooleanField()
