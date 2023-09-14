@@ -1,6 +1,13 @@
 from django.contrib import admin
 from django import forms
 from .models import Products, ProductImages, Categories, CategoryItem
+import admin_thumbnails
+
+
+@admin_thumbnails.thumbnail("product_images")
+class ProductImagesInline(admin.TabularInline):
+    model = ProductImages
+    extra = 1
 
 
 class ProductsAdminForm(forms.ModelForm):
@@ -21,10 +28,7 @@ class ProductsAdmin(admin.ModelAdmin):
     )
     list_filter = ("seller_id", "auction_active")
     search_fields = ("product_name", "seller_id__username")
-
-
-class ProductImagesAdmin(admin.ModelAdmin):
-    list_display = ("products_id", "product_images")
+    inlines = [ProductImagesInline]
 
 
 class CategoriesAdmin(admin.ModelAdmin):
@@ -36,6 +40,5 @@ class CategoryItemAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Products, ProductsAdmin)
-admin.site.register(ProductImages, ProductImagesAdmin)
 admin.site.register(Categories, CategoriesAdmin)
 admin.site.register(CategoryItem, CategoryItemAdmin)

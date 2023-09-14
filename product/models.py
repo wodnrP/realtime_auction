@@ -33,11 +33,14 @@ class Products(models.Model):
 
 class ProductImages(models.Model):
     products_id = models.ForeignKey(Products, on_delete=models.CASCADE)
-    product_images = models.ImageField()
+    product_images = models.ImageField(upload_to="product/images/")
 
     class Meta:
         verbose_name = "ProductImage"
         verbose_name_plural = "ProductImages"
+
+    def __str__(self):
+        return self.products_id.product_name
 
 
 class Categories(MPTTModel):
