@@ -9,7 +9,7 @@ import requests
 import time
 
 env = environ.Env(DEBUG=(bool, False))
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 environ.Env.read_env(env_file=os.path.join(BASE_DIR, ".env"))
 
 NAVER_ACCESS_KEY = env("NAVER_ACCESS_KEY")

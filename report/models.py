@@ -1,4 +1,4 @@
-from djongo import models
+from django.db import models
 
 """
 reporter : 신고자
