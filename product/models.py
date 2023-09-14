@@ -1,6 +1,7 @@
 from djongo import models
 from django.utils import timezone
 from user.models import User
+
 # Create your models here.
 
 
@@ -12,6 +13,10 @@ class Products(models.Model):
     auction_start_at = models.DateTimeField()
     auction_end_at = models.DateTimeField()
     auction_state = models.BooleanField()
+
+    class Meta:
+        verbose_name = "Product"
+        verbose_name_plural = "Products"
 
     def save(self, *args, **kwargs):
         if not self.id:
@@ -29,9 +34,17 @@ class ProductImages(models.Model):
     products_id = models.ForeignKey(Products, on_delete=models.CASCADE)
     product_images = models.ImageField()
 
+    class Meta:
+        verbose_name = "ProductImage"
+        verbose_name_plural = "ProductImages"
+
 
 class Categories(models.Model):
     category_name = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name = "Category"
+        verbose_name_plural = "Categories"
 
     def __str__(self):
         return self.category_name
@@ -40,6 +53,10 @@ class Categories(models.Model):
 class CategoryItem(models.Model):
     category_id = models.ForeignKey(Categories, on_delete=models.CASCADE)
     product_id = models.ForeignKey(Products, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = "CategoryItem"
+        verbose_name_plural = "CategoryItems"
 
     def __str__(self):
         return f" category_id : {self.category_id}, product_id : {self.product_id}"
