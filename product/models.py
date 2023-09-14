@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from user.models import User
+from mptt.models import MPTTModel, TreeForeignKey
 
 # Create your models here.
 
@@ -39,8 +40,14 @@ class ProductImages(models.Model):
         verbose_name_plural = "ProductImages"
 
 
-class Categories(models.Model):
+class Categories(MPTTModel):
     category_name = models.CharField(max_length=100)
+    parent = TreeForeignKey(
+        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
+    )
+
+    class MPTTMeta:
+        order_insertion_by = ["category_name"]
 
     class Meta:
         verbose_name = "Category"
