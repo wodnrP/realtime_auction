@@ -117,10 +117,10 @@ class LoginView(APIView):
 
         if user.is_authenticated:
             token = MyTokenObtainPairSerializer.get_token(user)
-            refrech_token = str(token)
+            refresh_token = str(token)
             access_token = str(token.access_token)
 
             return Response(
-                {"msg": "로그인 성공", "access": access_token, "refresh": refrech_token},
+                {"msg": "로그인 성공", "access": access_token, "refresh": refresh_token},
                 status=status.HTTP_200_OK,
             )
