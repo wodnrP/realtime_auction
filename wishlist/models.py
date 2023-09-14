@@ -1,4 +1,4 @@
-from djongo import models
+from django.db import models
 from user.models import User
 from product.models import Products
 # Create your models here.
