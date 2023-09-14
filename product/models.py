@@ -12,7 +12,7 @@ class Products(models.Model):
     product_content = models.CharField(max_length=100)
     auction_start_at = models.DateTimeField()
     auction_end_at = models.DateTimeField()
-    auction_state = models.BooleanField()
+    auction_active = models.BooleanField()
 
     class Meta:
         verbose_name = "Product"
