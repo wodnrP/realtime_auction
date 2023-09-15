@@ -2,6 +2,8 @@ from django.db import models
 from django.utils import timezone
 from user.models import User
 from mptt.models import MPTTModel, TreeForeignKey
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 # Create your models here.
 
@@ -13,7 +15,7 @@ class Products(models.Model):
     product_content = models.TextField()
     auction_start_at = models.DateTimeField()
     auction_end_at = models.DateTimeField()
-    auction_active = models.BooleanField()
+    auction_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "Product"
@@ -26,6 +28,12 @@ class Products(models.Model):
             # 예시로 3일 후로 설정
             self.auction_end_at = timezone.now() + timezone.timedelta(days=3)
         super(Products, self).save(*args, **kwargs)
+
+    @receiver(post_save, sender="product.Products")
+    def set_auction_active(sender, instance, **kwargs):
+        if not instance.auction_end_at or instance.auction_end_at < timezone.now():
+            instance.auction_active = False
+            instance.save()
 
     def __str__(self):
         return self.product_name
