@@ -1,5 +1,6 @@
 from django.urls import path
-from django.conf import settings
+from product import views
 
-urlpatterns = [   
+urlpatterns = [
+    path("all-products", views.ProductsView.as_view(), name="all-products"),
 ]
