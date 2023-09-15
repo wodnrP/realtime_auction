@@ -13,20 +13,13 @@ class Products(models.Model):
     product_name = models.CharField(max_length=100)
     product_price = models.CharField(max_length=100)
     product_content = models.TextField()
-    auction_start_at = models.DateTimeField()
-    auction_end_at = models.DateTimeField()
-    auction_active = models.BooleanField()
+    auction_start_at = models.DateTimeField(default=timezone.now)
+    auction_end_at = models.DateTimeField(default=timezone.now() + timezone.timedelta(days=3))
+    auction_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "Product"
         verbose_name_plural = "Products"
-
-    def save(self, *args, **kwargs):
-        if not self.id:
-            self.auction_active = True
-            self.auction_start_at = timezone.now()
-            self.auction_end_at = timezone.now() + timezone.timedelta(seconds=30)
-        super(Products, self).save(*args, **kwargs)
 
     @receiver(post_save, sender="product.Products")
     def set_auction_active(sender, instance, **kwargs):
