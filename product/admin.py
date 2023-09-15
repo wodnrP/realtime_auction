@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django import forms
-from .models import Products, ProductImages, Categories, CategoryItem
+from .models import Products, ProductImages, Categories
 import admin_thumbnails
 
 
@@ -35,10 +35,5 @@ class CategoriesAdmin(admin.ModelAdmin):
     list_display = ("category_name",)
 
 
-class CategoryItemAdmin(admin.ModelAdmin):
-    list_display = ("category_id", "product_id")
-
-
 admin.site.register(Products, ProductsAdmin)
 admin.site.register(Categories, CategoriesAdmin)
-admin.site.register(CategoryItem, CategoryItemAdmin)

@@ -14,8 +14,11 @@ class Products(models.Model):
     product_price = models.CharField(max_length=100)
     product_content = models.TextField()
     auction_start_at = models.DateTimeField(default=timezone.now)
-    auction_end_at = models.DateTimeField(default=timezone.now() + timezone.timedelta(days=3))
+    auction_end_at = models.DateTimeField(
+        default=timezone.now() + timezone.timedelta(days=3)
+    )
     auction_active = models.BooleanField(default=True)
+    category = TreeForeignKey("Categories", on_delete=models.PROTECT)
 
     class Meta:
         verbose_name = "Product"
@@ -46,7 +49,7 @@ class ProductImages(models.Model):
 class Categories(MPTTModel):
     category_name = models.CharField(max_length=100)
     parent = TreeForeignKey(
-        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
+        "self", on_delete=models.PROTECT, null=True, blank=True, related_name="children"
     )
 
     class MPTTMeta:
@@ -58,15 +61,3 @@ class Categories(MPTTModel):
 
     def __str__(self):
         return self.category_name
-
-
-class CategoryItem(models.Model):
-    category_id = models.ForeignKey(Categories, on_delete=models.CASCADE)
-    product_id = models.ForeignKey(Products, on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = "CategoryItem"
-        verbose_name_plural = "CategoryItems"
-
-    def __str__(self):
-        return f" category_id : {self.category_id}, product_id : {self.product_id}"
