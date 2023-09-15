@@ -9,6 +9,7 @@ from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .filters import ProductsFilter
+from rest_framework.pagination import PageNumberPagination
 
 now = timezone.now()
 
@@ -21,7 +22,11 @@ class ProductsView(APIView):
                 "auction_end_at"
             ),
         )
-        serializer = ProductsSerializer(filter_set.qs, many=True)
+        # 페이지 네이션
+        paginator = PageNumberPagination()
+        paginator.page_size = 2
+        queryset = paginator.paginate_queryset(filter_set.qs, request)
+        serializer = ProductsSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
