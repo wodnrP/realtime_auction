@@ -3,8 +3,10 @@ from django.db import models
 from user.models import User
 
 class Penalty(models.Model):
+    class PeanaltyTypeChoice(models.TextChoices):
+        BUY = 'buy','구매'
+        SELL = 'sell','판매'
+    
     user_id = models.ForeignKey(User,  on_delete=models.CASCADE)
-    buy_penalty = models.IntegerField()
-    buy_penalty_content = models.CharField(max_length=255)
-    sell_penalty = models.IntegerField()
-    sell_penalty_content = models.CharField(max_length=255)
+    penalty_type = models.CharField(choices=PeanaltyTypeChoice.choices)
+    penalty_content = models.TextField()
