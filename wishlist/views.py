@@ -96,7 +96,7 @@ class WishlistView(APIView):
             
             serializer = WishlistSerializer(wishlist, partial=True)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response({'Message : already saved'},status=status.HTTP_400_BAD_REQUEST)
+        return Response({'Message':'already saved'},status=status.HTTP_400_BAD_REQUEST)
 
 
     def delete(self, request, product_id):
