@@ -1,11 +1,42 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import serializers
 from .serializer import WishlistSerializer
 from .models import Wishlist
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.authentication import get_authorization_header
 from rest_framework.permissions import IsAuthenticated
+from product.models import Products
+from user.models import User
+from django.shortcuts import get_object_or_404
+from django.conf import settings
+import jwt
+
+
+# 로그인 한 사용자의 id 정보
+def user_check(request):
+    access_token = get_authorization_header(request).split()[1]
+    decode_token = jwt.decode(
+        access_token, 
+        settings.SECRET_KEY, 
+        algorithms=['HS256'], 
+        verify=False)
+    users_id = decode_token['user_id']
+    user = User.objects.get(id=users_id)
+    return user
+
+# wishlist에 이미 저장한 항목인이 확인 
+def wish_check(request, product_id):
+    user = user_check(request)
+    product = get_object_or_404(Products, id=product_id)
+    wish_check = Wishlist.objects.filter(
+        users_id=user,
+        product_id=product,
+        wishlist_active=True
+        ).exists()
+    return wish_check
+
 
 class WishlistView(APIView):
     # 로그인 여부 확인
@@ -36,20 +67,37 @@ class WishlistView(APIView):
         
 
     """
-    1. 사용자 로그인 확인
-    2. 로그인 된 사용자라면 
-        product_id를 request로 받고, 
-        2-1
-            product_id가 Products DB 테이블에 존재할 때 
-            whishlist_active 값을 True로 하는 wishlist 객체 생성
-        2-2
-            product_id가 Products DB에 존재하지 않을 때
-            Error : Product Does not exist
-    3. 로그인 된 사용자가 아니라면 
-        Message : 권한이 없습니다.
+    이미 저장한 값인지 확인
+    사용자 정보, 프로덕트 정보, active값 True 저장
+    Wishlist DoesNotExist 예외처리
+    이미 저장한 경우 알림 
     """
-    def post(self, request):
-        pass
+    def post(self, request, product_id):
+        wishcheck = wish_check(request, product_id)
+        user = user_check(request)
+        product = get_object_or_404(Products, id=product_id)
+        
+        if wishcheck is False:
+            try:
+                wishlist = Wishlist(
+                    users_id=user, 
+                    product_id=product, 
+                    wishlist_active=True
+                    )
+                if wishlist.product_id.product_name == product.product_name:
+                    wishlist.save()
+            
+            except Wishlist.DoesNotExist:
+                wishlist = Wishlist(
+                    users_id=user, 
+                    product_id=product, 
+                    wishlist_active=True
+                )
+                wishlist.save()
+            
+            serializer = WishlistSerializer(wishlist, partial=True)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({'Message : already saved'},status=status.HTTP_400_BAD_REQUEST)
 
     """
     1. 사용자 로그인 확인
