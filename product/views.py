@@ -8,17 +8,20 @@ from django.utils import timezone
 from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from .filters import ProductsFilter
 
 now = timezone.now()
 
 
 class ProductsView(APIView):
     def get(self, request):
-        # 목록을 가져오는 GET 요청 처리 로직
-        queryset = Products.objects.filter(auction_end_at__gt=now).order_by(
-            "auction_end_at"
+        filter_set = ProductsFilter(
+            request.GET,
+            queryset=Products.objects.filter(auction_end_at__gt=now).order_by(
+                "auction_end_at"
+            ),
         )
-        serializer = ProductsSerializer(queryset, many=True)
+        serializer = ProductsSerializer(filter_set.qs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

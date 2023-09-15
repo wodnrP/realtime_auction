@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "report.apps.ReportConfig",
     # External
     "mptt",
+    "django_filters",
 ]
 
 MIDDLEWARE = [
