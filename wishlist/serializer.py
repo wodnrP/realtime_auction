@@ -5,4 +5,4 @@ class WishlistSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Wishlist
-        fields = ('id', 'user_id', 'product_id', 'wishlist_active')
+        fields = ('id', 'users_id', 'product_id', 'wishlist_active')
