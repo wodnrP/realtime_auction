@@ -99,13 +99,13 @@ class WishlistView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response({'Message : already saved'},status=status.HTTP_400_BAD_REQUEST)
 
-    """
-    1. 사용자 로그인 확인
-    2. 로그인 된 사용자라면
-        wishlist DB에 해당 사용자가 해당 프로덕트를 저장했을 경우
-        wishlist_active가 True이면 
-        wishlist 객체 삭제
-        Message : success
-    """
-    def delete(self, request):
-        pass
+
+    def delete(self, request, product_id):
+        user = user_check(request)
+        wishcheck = wish_check(request, product_id)
+        product = Products.objects.get(id=product_id)
+
+        if wishcheck is True:
+            wishlist = Wishlist.objects.get(users_id=user, product_id=product)
+            wishlist.delete()
+            return Response({'Message':'delete success'},status=status.HTTP_200_OK)
