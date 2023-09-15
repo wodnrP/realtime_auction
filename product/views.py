@@ -18,3 +18,13 @@ class ProductsView(APIView):
         )
         serializer = ProductsSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class NewProductView(APIView):
+    def post(self, request):
+        # POST 요청 처리 로직
+        serializer = ProductsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
