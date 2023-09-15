@@ -15,7 +15,7 @@ class Products(models.Model):
     product_content = models.TextField()
     auction_start_at = models.DateTimeField()
     auction_end_at = models.DateTimeField()
-    auction_active = models.BooleanField(default=True)
+    auction_active = models.BooleanField()
 
     class Meta:
         verbose_name = "Product"
@@ -23,10 +23,9 @@ class Products(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            # 모델이 생성될 때만 현재 시간을 설정
+            self.auction_active = True
             self.auction_start_at = timezone.now()
-            # 예시로 3일 후로 설정
-            self.auction_end_at = timezone.now() + timezone.timedelta(days=3)
+            self.auction_end_at = timezone.now() + timezone.timedelta(seconds=30)
         super(Products, self).save(*args, **kwargs)
 
     @receiver(post_save, sender="product.Products")
