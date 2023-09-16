@@ -7,13 +7,14 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from user.models import User
 from user.serializers import (
     UserSerializer,
     PhoneNumberSerializer,
     MyTokenObtainPairSerializer,
+    LogoutSerializer,
 )
 
 from user.naver_sms.utils import make_signature, send_sms
@@ -120,7 +121,8 @@ class LoginView(APIView):
                 {"msg": "로그인 성공", "access": access_token, "refresh": refresh_token},
                 status=status.HTTP_200_OK,
             )
-            
+
+
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
     
@@ -141,4 +143,14 @@ class ProfileView(APIView):
         if user_serializer.is_valid():
             user_serializer.save()
             return Response(user_serializer.data, status=status.HTTP_202_ACCEPTED)
-                
+
+class LogoutView(APIView):
+    """
+    logout view
+    """
+    def post(self, request):
+        token_serializer = LogoutSerializer(data=request.data)
+        token_serializer.is_valid(raise_exception=True)
+        token_serializer.save()
+        return Response({"msg": "logout success" }, 
+                        status=status.HTTP_204_NO_CONTENT)

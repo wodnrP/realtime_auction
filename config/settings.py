@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'user.apps.UserConfig',
     'auction.apps.AuctionConfig',
     'chat.apps.ChatConfig',
@@ -82,6 +83,7 @@ SIMPLE_JWT = {
     'SIGNING_KEY': SECRET_KEY,
     'ALGORITHM': 'HS256',
     'AUTH_HEADER_TYPES': ('Bearer',),
+    'BLACKLIST_ENABLED': True,
 }
 
 ROOT_URLCONF = 'config.urls'
