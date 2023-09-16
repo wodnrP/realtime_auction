@@ -1,4 +1,3 @@
-from rest_framework.authentication import get_authorization_header
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -9,28 +8,13 @@ from .serializer import WishlistSerializer
 from product.models import Products
 from django.conf import settings
 from .models import Wishlist
-from user.models import User
-import jwt
 
-
-# 로그인 한 사용자의 id 정보
-def user_check(request):
-    access_token = get_authorization_header(request).split()[1]
-    decode_token = jwt.decode(
-        access_token, 
-        settings.SECRET_KEY, 
-        algorithms=['HS256'], 
-        verify=False)
-    users_id = decode_token['user_id']
-    user = User.objects.get(id=users_id)
-    return user
 
 # wishlist에 이미 저장한 항목인이 확인 
 def wish_check(request, product_id):
-    user = user_check(request)
     product = get_object_or_404(Products, id=product_id)
     wish_check = Wishlist.objects.filter(
-        users_id=user,
+        users_id=request.user,
         product_id=product,
         wishlist_active=True
         ).exists()
@@ -56,7 +40,7 @@ class WishlistView(APIView):
             paginator.page_size = int(items)
         page = int(page)
 
-        wishlist = Wishlist.objects.filter()
+        wishlist = Wishlist.objects.filter(request.user.id)
         result = paginator.paginate_queryset(wishlist, request)
         try:
             serializer = WishlistSerializer(result, many = True, context={"request": request})
@@ -73,7 +57,7 @@ class WishlistView(APIView):
     """
     def post(self, request, product_id):
         wishcheck = wish_check(request, product_id)
-        user = user_check(request)
+        user = request.user
         product = get_object_or_404(Products, id=product_id)
         
         if wishcheck is False:
@@ -100,11 +84,10 @@ class WishlistView(APIView):
 
 
     def delete(self, request, product_id):
-        user = user_check(request)
         wishcheck = wish_check(request, product_id)
         product = Products.objects.get(id=product_id)
 
         if wishcheck is True:
-            wishlist = Wishlist.objects.get(users_id=user, product_id=product)
+            wishlist = Wishlist.objects.get(users_id=request.user, product_id=product)
             wishlist.delete()
             return Response({'Message':'delete success'},status=status.HTTP_200_OK)
