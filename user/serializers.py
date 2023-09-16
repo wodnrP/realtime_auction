@@ -35,11 +35,10 @@ class UserSerializer(serializers.ModelSerializer):
             instance.username = validated_data.get("username", instance.username)
             instance.save()
 
-        if validated_data["nickname"] == "":
-            instance.nickname = f"user{instance.id}"
-            instance.save()
-
-        elif "nickname" in validated_data:
+        if "nickname" in validated_data:
+            if validated_data["nickname"] == "":
+                instance.nickname = f"user{instance.id}"
+                instance.save()
             instance.nickname = validated_data.get("nickname", instance.nickname)
             instance.save()
 
