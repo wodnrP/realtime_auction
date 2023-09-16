@@ -6,6 +6,8 @@ from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from user.models import User
 from user.serializers import (
@@ -29,7 +31,6 @@ class CheckPhoneNumberView(APIView):
         random_number = str(random.randrange(1000, 10000))
         phone_number = request.data["phone_number"]
         user_check = User.objects.filter(phone_number=phone_number).exists()
-
 
         if user_check:
             return Response(
@@ -61,7 +62,7 @@ class CheckAuthNumberView(APIView):
         input_number = request.data["input_number"]
 
         user_check = User.objects.filter(phone_number=phone_number)
-        
+
         if user_check.exists():
             if user_check.first().auth_number == input_number:
                 return Response({"msg": "인증이 완료되었습니다."}, status=status.HTTP_200_OK)
@@ -117,5 +118,27 @@ class LoginView(APIView):
 
             return Response(
                 {"msg": "로그인 성공", "access": access_token, "refresh": refresh_token},
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
+            
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self,request):
+        """
+        기존 유저 정보 조회
+        """
+        user = request.user
+        user_serializer = UserSerializer(user)
+        return Response(user_serializer.data)
+    
+    def put(self, request):
+        """
+        개인 정보 수정 (닉네임, 주소, 비밀번호 등)
+        """
+        user = request.user
+        user_serializer = UserSerializer(user, data=request.data, partial=True)
+        if user_serializer.is_valid():
+            user_serializer.save()
+            return Response(user_serializer.data, status=status.HTTP_202_ACCEPTED)
+                
