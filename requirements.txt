@@ -6,6 +6,7 @@ click==8.1.7
 colorama==0.4.6
 Django==4.1.11
 django-admin-thumbnails==0.2.8
+django-filter==23.2
 django-js-asset==2.1.0
 django-mptt==0.14.0
 djangorestframework==3.14.0
