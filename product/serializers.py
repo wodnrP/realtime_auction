@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Products, ProductImages, Categories
+from .models import Products, ProductImages
 
 
 class ImageSerializer(serializers.ModelSerializer):
@@ -22,11 +22,10 @@ class ProductsSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
 
-        # 'category' 필드 대신 'category_name' 필드 사용
+        image_urls = [img["product_images"] for img in data["product_images"]]
+        data["product_images"] = image_urls
+
         data["category"] = data["category_name"]
         del data["category_name"]
-
-        if data["product_images"]:
-            data["product_images"] = data["product_images"][0]["product_images"]
 
         return data
