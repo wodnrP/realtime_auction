@@ -40,7 +40,7 @@ class WishlistView(APIView):
             paginator.page_size = int(items)
         page = int(page)
 
-        wishlist = Wishlist.objects.filter(request.user.id)
+        wishlist = Wishlist.objects.filter(users_id=request.user.id)
         result = paginator.paginate_queryset(wishlist, request)
         try:
             serializer = WishlistSerializer(result, many = True, context={"request": request})
