@@ -14,7 +14,7 @@ class ProductsSerializer(serializers.ModelSerializer):
     )
 
     category_name = serializers.CharField(
-        source="category.category_name", required=True
+        source="category.category_name", read_only=True
     )
 
     class Meta:
