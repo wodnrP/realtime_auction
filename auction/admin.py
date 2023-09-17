@@ -5,20 +5,22 @@ from .models import Auction
 @admin.register(Auction)
 class AuctionAdmin(admin.ModelAdmin):
     list_display = (
+        "pk",
         "auction_users",
-        "auction_chat_name",
-        "auction_chat_open_at",
+        "auction_product_name",
+        "auction_start_at",
     )
 
     list_display_links = (
+        "pk",
         "auction_users",
-        "auction_chat_name",
+        "auction_product_name",
     )
 
-    list_filter = ("auction_chat_open_at",)
+    list_filter = ("auction_start_at",)
 
     search_fields = (
         "auction_users",
-        "auction_chat_name",
-        "auction_chat_open_at",
+        "auction_product_name",
+        "auction_start_at",
     )
