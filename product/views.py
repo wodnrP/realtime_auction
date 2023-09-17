@@ -5,9 +5,8 @@ from rest_framework.response import Response
 from .serializers import ProductsSerializer, ImageSerializer
 from rest_framework import status
 from django.utils import timezone
-from rest_framework.decorators import authentication_classes, permission_classes
+from rest_framework.decorators import permission_classes
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from .filters import ProductsFilter
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -28,6 +27,7 @@ class ProductsView(APIView):
     Errors:
     - 400 Bad Request: 요청 데이터가 유효하지 않은 경우
     """
+
     def get(self, request):
         filter_set = ProductsFilter(
             request.GET,
@@ -42,7 +42,6 @@ class ProductsView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 class NewProductView(APIView):
     """
@@ -59,6 +58,7 @@ class NewProductView(APIView):
     Errors:
     - 400 Bad Request: 요청 데이터가 유효하지 않은 경우
     """
+
     def post(self, request):
         serializer = ProductsSerializer(data=request.data)
         if serializer.is_valid():
@@ -67,7 +67,6 @@ class NewProductView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 class DeleteProductView(APIView):
     """
@@ -87,13 +86,13 @@ class DeleteProductView(APIView):
     - 403 Forbidden: 상품을 삭제할 권한이 없는 경우
     - 404 Not Found: 삭제하려는 상품이 존재하지 않는 경우
     """
+
     def delete(self, request, pk):
         product = get_object_or_404(Products, pk=pk, auction_active=True)
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 class ImageView(APIView):
     """
@@ -110,6 +109,7 @@ class ImageView(APIView):
     Errors:
     - 400 Bad Request: 요청 데이터가 유효하지 않은 경우
     """
+
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, *args, **kwargs):
@@ -128,8 +128,16 @@ class ImageView(APIView):
         serializer = ImageSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            product_id = request.data.get("products_id")
+            if product_id:
+                product = Products.objects.get(pk=product_id)
+                serializer.save(products_id=product)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response(
+                    {"error": "product_id is required."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
