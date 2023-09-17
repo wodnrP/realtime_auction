@@ -8,5 +8,5 @@ class Penalty(models.Model):
         SELL = 'sell','판매'
     
     user_id = models.ForeignKey(User,  on_delete=models.CASCADE)
-    penalty_type = models.CharField(choices=PeanaltyTypeChoice.choices)
+    penalty_type = models.CharField(max_length=4,choices=PeanaltyTypeChoice.choices)
     penalty_content = models.TextField()
