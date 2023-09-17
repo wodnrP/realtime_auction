@@ -13,7 +13,9 @@ class ProductsSerializer(serializers.ModelSerializer):
         many=True, read_only=True, source="productimages_set"
     )
 
-    category_name = serializers.CharField(source="category.category_name")
+    category_name = serializers.CharField(
+        source="category.category_name", required=True
+    )
 
     class Meta:
         model = Products
