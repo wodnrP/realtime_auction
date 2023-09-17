@@ -30,7 +30,6 @@ class CheckPhoneNumberView(APIView):
         phone_number = request.data["phone_number"]
         user_check = User.objects.filter(phone_number=phone_number).exists()
 
-
         if user_check:
             return Response(
                 {"msg": "이미 존재하는 유저입니다."}, status=status.HTTP_400_BAD_REQUEST
@@ -61,7 +60,7 @@ class CheckAuthNumberView(APIView):
         input_number = request.data["input_number"]
 
         user_check = User.objects.filter(phone_number=phone_number)
-        
+
         if user_check.exists():
             if user_check.first().auth_number == input_number:
                 return Response({"msg": "인증이 완료되었습니다."}, status=status.HTTP_200_OK)
@@ -117,5 +116,5 @@ class LoginView(APIView):
 
             return Response(
                 {"msg": "로그인 성공", "access": access_token, "refresh": refresh_token},
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
