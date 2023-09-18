@@ -39,8 +39,6 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    "daphne",
-    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -61,9 +59,6 @@ INSTALLED_APPS = [
     "mptt",
     "django_filters",
 ]
-
-# Channels # Daphne
-ASGI_APPLICATION = "config.asgi.application"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
