@@ -11,12 +11,10 @@ from django.dispatch import receiver
 class Products(models.Model):
     seller_id = models.ForeignKey(User, on_delete=models.CASCADE)
     product_name = models.CharField(max_length=100)
-    product_price = models.CharField(max_length=100)
+    product_price = models.IntegerField()
     product_content = models.TextField()
-    auction_start_at = models.DateTimeField(default=timezone.now)
-    auction_end_at = models.DateTimeField(
-        default=timezone.now() + timezone.timedelta(days=3)
-    )
+    auction_start_at = models.DateTimeField(blank=True, null=True)
+    auction_end_at = models.DateTimeField(blank=True, null=True)
     auction_active = models.BooleanField(default=True)
     category = TreeForeignKey("Categories", on_delete=models.PROTECT)
 
