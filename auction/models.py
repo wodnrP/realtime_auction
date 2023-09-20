@@ -7,7 +7,7 @@ from product.models import Products
 
 
 """
-auction_users : 경매 물건을 파는 사람 == 채팅방 주인
+auction_host : 경매 물건을 파는 사람 == 채팅방 주인
 auction_product_name : 경매 제품 이름(경매 채팅방 이름) // 제품 당 1개의 채팅방만 생성가능(1:1)
 auction_start_at : 경매 시작 시간
 auction_end_at : 경매 마감 시간(user가 경매를 종료 했을 경우 마감 시간이 설정 됨)
@@ -18,7 +18,7 @@ auction_final_price : 낙찰 가격 (낙찰자가 구매하는 최종 구매 가
 
 
 class Auction(models.Model):
-    auction_user = models.ForeignKey(
+    auction_host = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
@@ -56,10 +56,9 @@ class Auction(models.Model):
         related_name="auctions_final_buyer",
         verbose_name="경매 낙찰자",
     )
-    auction_final_price = models.CharField(
-        max_length=100,
-        blank=False,
-        null=False,
+    auction_final_price = models.IntegerField(
+        blank=True,
+        null=True,
         verbose_name="경매 최종 가격",
     )
 
@@ -68,24 +67,57 @@ class Auction(models.Model):
         # Products 모델의 product_price가 변경될 때마다 연결된 Auction 모델의 auction_final_price 업데이트
         try:
             auction = Auction.objects.get(auction_product_name=instance)
-            auction.auction_final_price = instance.product_price
-            auction.save()
+            if "product_price" in kwargs.get("update_fields", None):
+                # 현재 낙찰가 보다 높은 가격으로만 업데이트
+                if instance.product_price > auction.auction_final_price:
+                    auction.auction_final_price = instance.product_price
+                    auction.save(update_fields=["auction_final_price"])
         except Auction.DoesNotExist:
-            # Auction 객체가 없으면 생성
-            Auction.objects.create(
-                auction_product_name=instance,
-                auction_final_price=instance.product_price,
-            )
+            # Auction의 객체가 없다면 생성
+            if "product_price" in kwargs.get("update_fields", None):
+                Auction.objects.create(
+                    auction_host=instance.product_user,
+                    auction_product_name=instance,
+                    auction_final_price=instance.product_price,
+                )
 
     def __str__(self):
-        return f"주최자: {self.auction_user}, 경매 물품: {self.auction_product_name}, 낙찰자: {self.auction_final_buyer}, 최종 낙찰 가격: {self.auction_final_price}"
+        return f"주최자: {self.auction_host}, 경매 물품: {self.auction_product_name}, 낙찰자: {self.auction_final_buyer}, 최종 낙찰 가격: {self.auction_final_price}"
 
-    def close_auction(self):
+    def close_auction(self, closing_price):
         """
-        판매자가 경매를 마감한 시간을 경매 마감시간으로 설정합니다.
+        판매자가 경매를 마감할 때 호출되며, closing_price를 낙찰가격으로 설정합니다.
         """
-        self.auction_end_at = timezone.now()
-        self.save()
+        if closing_price > self.auction_final_price:
+            self.auction_final_price = closing_price
+            self.auction_end_at = timezone.now()
+            self.save(update_fields=["auction_final_price", "auction_end_at"])
 
     class Meta:
         ordering = ["-auction_start_at"]
+
+
+"""
+sender_id : 보낸 메세지
+auction_room : 채팅방(물건 이름)
+auction_content : 채팅 설명
+auction_message_type : 메세지 타입(문자열 / 이미지 / 파일)
+auction_message_content : 메세지 내용
+auction_timestamp : 채팅 시간
+"""
+
+
+class AuctionMessage(models.Model):
+    sender_id = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="sent_messages",
+    )
+    auction_room = models.ForeignKey(
+        Auction,
+        on_delete=models.CASCADE,
+        related_name="auction_room_messages",
+    )
+    auction_message_type = models.TextField()
+    auction_message_content = models.TextField()
+    auction_timestamp = models.DateTimeField(auto_now_add=True)
