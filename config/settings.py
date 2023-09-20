@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     # External
     "mptt",
     "django_filters",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [

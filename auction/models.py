@@ -37,11 +37,12 @@ class Auction(models.Model):
         # default=timezone.now,
         verbose_name="경매 시작 시간",
     )
-    auction_end_at = models.DateTimeField(
-        blank=True,
-        null=True,
-        verbose_name="경매 마감 시간",
-    )
+    # auction_end_at = models.DateTimeField(
+    #     blank=True,
+    #     null=True,
+    #     verbose_name="경매 마감 시간",
+    # )
+    auction_active = models.BooleanField(default=False, verbose_name="경매 활성화 상태")
     auction_participants = models.ManyToManyField(
         User,
         blank=True,
@@ -65,20 +66,24 @@ class Auction(models.Model):
     @receiver(post_save, sender=Products)
     def update_auction_final_price(sender, instance, **kwargs):
         # Products 모델의 product_price가 변경될 때마다 연결된 Auction 모델의 auction_final_price 업데이트
+        update_fields = kwargs.get("update_fields")
         try:
             auction = Auction.objects.get(auction_product_name=instance)
-            if "product_price" in kwargs.get("update_fields", None):
+            if "product_price" in (update_fields if update_fields is not None else []):
                 # 현재 낙찰가 보다 높은 가격으로만 업데이트
-                if instance.product_price > auction.auction_final_price:
+                if instance.product_price > (auction.auction_final_price or 0):
                     auction.auction_final_price = instance.product_price
                     auction.save(update_fields=["auction_final_price"])
         except Auction.DoesNotExist:
             # Auction의 객체가 없다면 생성
-            if "product_price" in kwargs.get("update_fields", None):
+            if "product_price" in (update_fields if update_fields is not None else []):
                 Auction.objects.create(
                     auction_host=instance.product_user,
                     auction_product_name=instance,
                     auction_final_price=instance.product_price,
+                    # auction_start_at=instance.auction_start_at,
+                    # auction_end_at=instance.auction_end_at,
+                    active=False,
                 )
 
     def __str__(self):
@@ -102,6 +107,7 @@ sender_id : 보낸 메세지
 auction_room : 채팅방(물건 이름)
 auction_content : 채팅 설명
 auction_message_type : 메세지 타입(문자열 / 이미지 / 파일)
+auction_bid_price : 입찰 가격
 auction_message_content : 메세지 내용
 auction_timestamp : 채팅 시간
 """
@@ -119,5 +125,20 @@ class AuctionMessage(models.Model):
         related_name="auction_room_messages",
     )
     auction_message_type = models.TextField()
+    auction_bid_price = models.IntegerField(blank=True, null=True, verbose_name="입찰 가격")
     auction_message_content = models.TextField()
     auction_timestamp = models.DateTimeField(auto_now_add=True)
+
+    @classmethod
+    def lastest_bid_price(cls, auction_room):
+        """
+        경매방의 마지막 입찰가를 반환합니다.
+        """
+        lastest_bid = (
+            cls.objects.filter(
+                auction_room=auction_room, auction_bid_price__isnull=False
+            )
+            .order_by("-auction_timestamp")
+            .first()
+        )
+        return lastest_bid.auction_bid_price if lastest_bid else None
