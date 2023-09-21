@@ -23,10 +23,11 @@ class Products(models.Model):
         verbose_name_plural = "Products"
 
     @receiver(post_save, sender="product.Products")
-    def set_auction_active(sender, instance, **kwargs):
-        if not instance.auction_end_at or instance.auction_end_at < timezone.now():
-            instance.auction_active = False
-            instance.save()
+    def set_auction_active(sender, instance, created, **kwargs):
+        if created:
+            if not instance.auction_end_at or instance.auction_end_at < timezone.now():
+                instance.auction_active = False
+                instance.save(update_fields=["auction_active"])
 
     def __str__(self):
         return self.product_name
