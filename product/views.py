@@ -91,7 +91,7 @@ class DeleteProductView(APIView):
     """
 
     def delete(self, request, pk):
-        product = get_object_or_404(Products, pk=pk, auction_active=True)
+        product = get_object_or_404(Products, pk=pk, product_active=True)
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
