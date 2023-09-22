@@ -13,9 +13,9 @@ class Products(models.Model):
     product_name = models.CharField(max_length=100)
     product_price = models.IntegerField()
     product_content = models.TextField()
+    product_active = models.BooleanField(default=True)
     auction_start_at = models.DateTimeField(blank=True, null=True)
     auction_end_at = models.DateTimeField(blank=True, null=True)
-    auction_active = models.BooleanField(default=True)
     category = TreeForeignKey("Categories", on_delete=models.PROTECT)
 
     class Meta:

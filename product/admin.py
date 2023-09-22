@@ -13,7 +13,7 @@ class ProductImagesInline(admin.TabularInline):
 class ProductsAdminForm(forms.ModelForm):
     class Meta:
         model = Products
-        exclude = ("auction_start_at", "auction_end_at")
+        exclude = ("auction_end_at",)
 
 
 class ProductsAdmin(admin.ModelAdmin):
@@ -23,10 +23,9 @@ class ProductsAdmin(admin.ModelAdmin):
         "seller_id",
         "product_price",
         "auction_start_at",
-        "auction_end_at",
-        "auction_active",
+        "product_active",
     )
-    list_filter = ("seller_id", "auction_active")
+    list_filter = ("seller_id", "product_active")
     search_fields = ("product_name", "seller_id__username")
     inlines = [ProductImagesInline]
 
