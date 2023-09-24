@@ -1,156 +1,205 @@
 import json
-from typing import Set
-
+from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from djangochannelsrestframework.generics import GenericAsyncAPIConsumer
-from djangochannelsrestframework.observer import model_observer
-from djangochannelsrestframework.observer.generics import (
-    ObserverModelInstanceMixin,
-    action,
-)
-
-from .models import Auction, AuctionMessage
-from .serializers import AuctionSerializer, AuctionMessageSerializer
-from user.models import User
-from user.serializers import UserSerializer
+from django.utils import timezone
+from .models import AuctionRoom, AuctionMessage
 
 
-class AuctionConsumer(ObserverModelInstanceMixin, GenericAsyncAPIConsumer):
-    queryset = Auction.objects.all()
-    serializer_class = AuctionSerializer
-    lookup_field = "pk"
-
+class AuctionConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        # 1. 경매 객체 가져오기
-        auction_pk = self.scope["url_route"]["kwargs"]["pk"]
-        self.auction = await self.get_auction_by_pk(auction_pk)
+        # 로그인 확인
+        if not self.scope["user"].is_authenticated:
+            await self.close()
+            return
 
-        # 2. 사용자 인증 (예: 로그인 된 사용자인지 확인)
-        user = self.scope["user"]
-        if not user.is_authenticated:
-            return await self.close()
+        # 경매방 이름
+        self.auction_pk = self.scope["url_route"]["kwargs"]["auction_pk"]
+        self.room_group_name = f"auction_{self.auction_pk}"
 
-        # 3. WebSocket 그룹에 연결
-        auction_group_name = f"auction_{self.auction.pk}"
-        await self.channel_layer.group_add(auction_group_name, self.channel_name)
-        self.groups.append(auction_group_name)
-
-        # 4. 연결 수락
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name,
+        )
         await self.accept()
+        await self.add_participant()
 
-    async def disconnect(self, code):
-        # 1. 사용자가 경매 참가자 목록에 있으면 제거
-        if hasattr(self, "auction"):
-            await self.remove_user_from_auction(self.auction)
-            await self.notify_auction_users()
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name,
+        )
+        await self.remove_participant()
 
-        # 2. WebSocket 그룹에서 연결 제거
-        auction_group_name = f"auction_{self.auction.pk}"
-        await self.channel_layer.group_discard(auction_group_name, self.channel_name)
+    async def receive(self, text_data):
+        text_data_json = json.loads(text_data)
+        message_type = text_data_json["type"]
 
-        # 3. 부모 클래스의 disconnect 메서드 호출
-        await super().disconnect(code)
+        room = await self.get_room(self.auction_pk)
 
-    @action()
-    async def leave_auction(self, pk, **kwargs):
-        await self.remove_user_from_auction(pk)
+        if not room or room.auction_active == False:
+            await self.close()
+            return
 
-    @action()
-    async def create_message(self, message, **kwargs):
-        auction: Auction = await self.get_object(pk=self.auction_participants)
-        created_message = await database_sync_to_async(AuctionMessage.objects.create)(
-            auction_room=auction,
-            user=self.scope["user"],
-            auction_bid_price=message["auction_bid_price"],
-            auction_message_content=message["auction_message_content"],
+        # 메세지 유형 별 함수 호출
+        function_mapping = {
+            "join": self.handle_join,
+            "bid": self.handle_bid,
+            "message": self.handle_message,
+        }
+
+        if message_type in function_mapping:
+            await function_mapping[message_type](text_data_json)
+
+    async def handle_join(self, data):
+        current_user = self.scope["user"]
+        await self.add_participant()
+        await self.send_welcome_message(current_user.username)
+
+    async def handle_bid(self, data):
+        current_user = self.scope["user"]
+        room = await self.get_auction_room(self.auction_pk)
+
+        if room.auction_host == current_user:
+            await self.send_error_message("경매 주최자는 입찰할 수 없습니다.")
+            return
+
+        if room.auction_end_at < timezone.now():
+            await self.send_error_message("경매가 종료되었습니다.")
+            return
+
+        new_bid = int(data["bid"])
+        if new_bid > room.auction_bid_price:
+            await self.update_bid_price(new_bid)
+            await self.send_bid_message(current_user.username, new_bid)
+        else:
+            await self.send_error_message("현재 입찰가보다 높은 가격을 제시해주세요.")
+
+    async def handle_message(self, data):
+        current_user = self.scope["user"]
+        room = await self.get_auction_room(self.auction_pk)
+
+        if room.auction_host != current_user:
+            await self.send_error_message("메세지는 경매 주최자만 보낼 수 있습니다.")
+            return
+
+        message = data["message"]
+        await self.send_message_message(current_user.username, message)
+
+    async def send_welcome_message(self, username):
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                "type": "chat_message",
+                "message_type": "join",
+                "username": username,
+            },
         )
 
-        # 경매의 최종 가격이 업데이트 될 때만 알림 발송
-        if created_message.auction_bid_price > (auction.auction_final_price or 0):
-            auction.auction_final_price = created_message.auction_bid_price
-            await database_sync_to_async(auction.save)(
-                update_fields=["auction_final_price"]
-            )
-
-            # 알림 발송
-            await self.channel_layer.group_send(
-                f"auction__{auction.pk}",
-                {
-                    "type": "auction.price.update",
-                    "price": auction.auction_final_price,
-                },
-            )
-
-    @action()
-    async def subscribe_to_messages_in_auction(self, pk, request_id, **kwargs):
-        await self.message_activity.subscribe(auction=pk, request_id=request_id)
-
-    @model_observer(AuctionMessage)
-    async def message_activity(
-        self, message, observer=None, subscribing_request_ids=[], **kwargs
-    ):
-        for request_id in subscribing_request_ids:
-            message_body = dict(
-                request_id=request_id, **AuctionMessageSerializer(message).data
-            )
-            message_body.update({"type": "message"})
-            await self.send_json(message_body)
-
-    @message_activity.groups_for_signal
-    def message_activity(self, instance: AuctionMessage, **kwargs):
-        yield f"auction__{instance.auction_room.pk}"
-        yield f"pk__{instance.pk}"
-
-    @message_activity.groups_for_consumer
-    def message_activity(self, auction=None, **kwargs):
-        if auction is not None:
-            yield f"auction__{auction.pk}"
-
-    @message_activity.serializer
-    def message_activity(self, instance: AuctionMessage, action, **kwargs):
-        return dict(
-            data=AuctionMessageSerializer(instance).data,
-            action=action.value,
-            pk=instance.pk,
+    async def send_bid_message(self, username, bid):
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                "type": "chat_message",
+                "message_type": "bid",
+                "username": username,
+                "bid": bid,
+            },
         )
 
-    async def notify_auction_users(self):
-        auction: Auction = await self.get_object(pk=self.auction_participants)
-        for group in self.groups:
-            await self.channel_layer.group_send(
-                group,
-                {
-                    "type": "auction.update",
-                    "event": "update",
-                    "usuarios": await self.auction_participants(auction),
-                    "data": AuctionSerializer(auction).data,
-                },
-            )
+    async def send_message_message(self, username, message):
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                "type": "chat_message",
+                "message_type": "message",
+                "username": username,
+                "message": message,
+            },
+        )
 
-    async def update_users(self, event: dict):
-        await self.send(text_data=json.dumps({"usuarios": event["usuarios"]}))
+    async def send_error_message(self, message):
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                "type": "chat_message",
+                "message_type": "error",
+                "message": message,
+            },
+        )
 
-    @database_sync_to_async
-    def get_auction_by_pk(self, pk) -> Auction:
-        return Auction.objects.get(pk=pk)
-
-    @database_sync_to_async
-    def get_object(self, pk: int) -> Auction:
-        return Auction.objects.get(pk=pk)
-
-    @database_sync_to_async
-    def participants(self, auction: Auction):
-        return [
-            UserSerializer(user).data for user in auction.auction_participants.all()
-        ]
+    async def chat_message(self, event):
+        await self.send(text_data=json.dumps(event))
 
     @database_sync_to_async
-    def remove_user_from_auction(self, auction):
-        user: User = self.scope["user"]
-        user.auctions_participants.remove(auction)
+    def get_auction_room(self, auction_pk):
+        return AuctionRoom.objects.get(pk=auction_pk)
 
     @database_sync_to_async
-    def add_user_to_auction(self, pk):
-        user: User = self.scope["user"]
-        if not user.auctions_participants.filter(pk=self.auction_participants).exists():
-            user.auctions_participants.add(Auction.objects.get(pk=pk))
+    def add_participant(self):
+        room = AuctionRoom.objects.get(pk=self.auction_pk)
+        room.auction_paticipants.add(self.scope["user"])
+        room.paticipant_count += 1
+        room.save()
+
+    @database_sync_to_async
+    def remove_participant(self):
+        room = AuctionRoom.objects.get(pk=self.auction_pk)
+        room.auction_paticipants.remove(self.scope["user"])
+        room.paticipant_count -= 1
+        room.save()
+
+    @database_sync_to_async
+    def update_bid_price(self, new_bid):
+        room = AuctionRoom.objects.get(pk=self.auction_pk)
+        room.auction_bid_price = new_bid
+        room.save()
+
+    @database_sync_to_async
+    def add_message(self, username, message):
+        room = AuctionRoom.objects.get(pk=self.auction_pk)
+        AuctionMessage.objects.create(
+            auction_room=room,
+            auction_bid_price=room.auction_bid_price,
+            auction_user=self.scope["user"],
+            auction_message=message,
+        )
+
+    @database_sync_to_async
+    def add_bid_message(self, username, bid):
+        room = AuctionRoom.objects.get(pk=self.auction_pk)
+        AuctionMessage.objects.create(
+            auction_room=room,
+            auction_bid_price=bid,
+            auction_user=self.scope["user"],
+            auction_message=f"{username}님이 {bid}원을 입찰하셨습니다.",
+        )
+
+    @database_sync_to_async
+    def add_join_message(self, username):
+        room = AuctionRoom.objects.get(pk=self.auction_pk)
+        AuctionMessage.objects.create(
+            auction_room=room,
+            auction_bid_price=room.auction_bid_price,
+            auction_user=self.scope["user"],
+            auction_message=f"{username}님이 입장하셨습니다.",
+        )
+
+    @database_sync_to_async
+    def add_error_message(self, message):
+        room = AuctionRoom.objects.get(pk=self.auction_pk)
+        AuctionMessage.objects.create(
+            auction_room=room,
+            auction_bid_price=room.auction_bid_price,
+            auction_user=self.scope["user"],
+            auction_message=message,
+        )
+
+    @database_sync_to_async
+    def add_message_message(self, username, message):
+        room = AuctionRoom.objects.get(pk=self.auction_pk)
+        AuctionMessage.objects.create(
+            auction_room=room,
+            auction_bid_price=room.auction_bid_price,
+            auction_user=self.scope["user"],
+            auction_message=f"{username} : {message}",
+        )

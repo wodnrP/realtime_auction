@@ -39,6 +39,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "channels",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -47,7 +48,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "djangochannelsrestframework",
     "rest_framework_simplejwt",
     "user.apps.UserConfig",
     "auction.apps.AuctionConfig",
@@ -60,8 +60,17 @@ INSTALLED_APPS = [
     # External
     "mptt",
     "django_filters",
-    "django_celery_beat",
 ]
+
+# Daphne
+ASGI_APPLICATION = "config.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "asgiref.inmemory.ChannelLayer",
+        "ROUTING": "auction.routing.channel_routing",
+    },
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

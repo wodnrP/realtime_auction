@@ -2,143 +2,138 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.db import models
 from django.utils import timezone
+from datetime import timedelta
 from user.models import User
 from product.models import Products
 
 
-"""
-auction_host : 경매 물건을 파는 사람 == 채팅방 주인
-auction_product_name : 경매 제품 이름(경매 채팅방 이름) // 제품 당 1개의 채팅방만 생성가능(1:1)
-auction_start_at : 경매 시작 시간
-auction_end_at : 경매 마감 시간(user가 경매를 종료 했을 경우 마감 시간이 설정 됨)
-auction_participants : 경매 참여자 (경매에 참여하는 사람)
-auction_final_buyer : 낙찰 받는 사람 (물건을 구매하는 사람)
-auction_final_price : 낙찰 가격 (낙찰자가 구매하는 최종 구매 가격) / 경매가 시작될 때 경매 물품의 가격으로 초기화 / 경매가 진행될 때마다 최고가로 업데이트
-"""
+def handle_new_message(sender, instance, created, **kwargs):
+    if created:
+        instance.auction_room.auction_end_at = timezone.now() + timedelta(seconds=30)
+        instance.auction_room.save()
 
 
-class Auction(models.Model):
+class AuctionRoom(models.Model):
     auction_host = models.ForeignKey(
         User,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="auctions_user",
-        verbose_name="경매 주최자",
+        on_delete=models.CASCADE,
+        related_name="auction_host",
+        verbose_name="물건 판매자",
     )
-    auction_product_name = models.OneToOneField(
+    auction_room_name = models.OneToOneField(
         Products,
         on_delete=models.CASCADE,
-        related_name="auctions_product",
+        related_name="auction_product",
         verbose_name="경매 물품",
     )
-    auction_start_at = models.DateTimeField(
-        null=False,
-        blank=False,
-        # default=timezone.now,
-        verbose_name="경매 시작 시간",
-    )
-    # auction_end_at = models.DateTimeField(
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="경매 마감 시간",
-    # )
-    auction_active = models.BooleanField(default=False, verbose_name="경매 활성화 상태")
-    auction_participants = models.ManyToManyField(
-        User,
+    auction_final_price = models.PositiveIntegerField(
+        null=True,
         blank=True,
-        related_name="auctions_participants",
-        verbose_name="경매 참여자",
+        verbose_name="경매 최종 가격",
     )
-    auction_final_buyer = models.OneToOneField(
+    auction_winner = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="auctions_final_buyer",
-        verbose_name="경매 낙찰자",
+        related_name="auction_winner",
+        verbose_name="경매 최종 낙찰자",
     )
-    auction_final_price = models.IntegerField(
+    auction_paticipants = models.ManyToManyField(
+        User,
         blank=True,
-        null=True,
-        verbose_name="경매 최종 가격",
+        related_name="auction_paticipants",
+        verbose_name="경매 참여자들",
     )
 
-    @receiver(post_save, sender=Products)
-    def update_auction_final_price(sender, instance, **kwargs):
-        # Products 모델의 product_price가 변경될 때마다 연결된 Auction 모델의 auction_final_price 업데이트
-        update_fields = kwargs.get("update_fields")
-        try:
-            auction = Auction.objects.get(auction_product_name=instance)
-            if "product_price" in (update_fields if update_fields is not None else []):
-                # 현재 낙찰가 보다 높은 가격으로만 업데이트
-                if instance.product_price > (auction.auction_final_price or 0):
-                    auction.auction_final_price = instance.product_price
-                    auction.save(update_fields=["auction_final_price"])
-        except Auction.DoesNotExist:
-            # Auction의 객체가 없다면 생성
-            if "product_price" in (update_fields if update_fields is not None else []):
-                Auction.objects.create(
-                    auction_host=instance.product_user,
-                    auction_product_name=instance,
-                    auction_final_price=instance.product_price,
-                    # auction_start_at=instance.auction_start_at,
-                    # auction_end_at=instance.auction_end_at,
-                    active=False,
-                )
+    paticipant_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name="경매 참여자 수",
+    )
 
-    def __str__(self):
-        return f"주최자: {self.auction_host}, 경매 물품: {self.auction_product_name}, 낙찰자: {self.auction_final_buyer}, 최종 낙찰 가격: {self.auction_final_price}"
+    auction_end_at = models.DateTimeField()  # 마지막 메시지 전송 시간 + 30초
 
-    def close_auction(self, closing_price):
-        """
-        판매자가 경매를 마감할 때 호출되며, closing_price를 낙찰가격으로 설정합니다.
-        """
-        if closing_price > self.auction_final_price:
-            self.auction_final_price = closing_price
-            self.auction_end_at = timezone.now()
-            self.save(update_fields=["auction_final_price", "auction_end_at"])
+    auction_active = models.BooleanField(
+        default=False, verbose_name="경매 활성화 여부"
+    )  # 경매 시작 시 True, 경매 종료 시 False
+
+    def save(self, *args, **kwargs):
+        # 경매 종료 시간이 경매 시작 시간보다 빠를 경우, 에러를 발생시킵니다.
+        if (
+            self.auction_end_at
+            and self.auction_start_at
+            and self.auction_end_at < self.auction_start_at
+        ):
+            raise ValueError("경매 종료 시간은 경매 시작 시간보다 빠를 수 없습니다.")
+
+        # auction_end_at이 설정되지 않았을 경우, 시작 시간 + 3일로 설정합니다. == 참가자가 없는 경우
+        if not self.auction_end_at:
+            self.auction_end_at = AuctionRoom.auction_start_at + timedelta(days=3)
+
+        # 경매가 종료되었을 경우, 경매 활성화 여부를 False로 설정합니다.
+        if timezone.now() > self.auction_end_at:
+            self.auction_active = False
+        super(AuctionRoom, self).save(*args, **kwargs)
+
+    @property
+    def starting_price(self):
+        return self.auction_room_name.product_price
+
+    @property
+    def auction_start_at(self):
+        return self.auction_room_name.auction_start_at
+
+    @property
+    def product_active(self):
+        return self.auction_room_name.auction_active
 
     class Meta:
-        ordering = ["-auction_start_at"]
+        verbose_name = "경매 채팅 방"
+        verbose_name_plural = "경매 채팅 방"
 
-
-"""
-sender_id : 보낸 메세지
-auction_room : 채팅방(물건 이름)
-auction_content : 채팅 설명
-auction_message_type : 메세지 타입(문자열 / 이미지 / 파일)
-auction_bid_price : 입찰 가격
-auction_message_content : 메세지 내용
-auction_timestamp : 채팅 시간
-"""
+    def __str__(self):
+        return f"경매 채팅방 : {self.auction_room_name}"
 
 
 class AuctionMessage(models.Model):
-    sender_id = models.ForeignKey(
+    auction_room = models.ForeignKey(
+        AuctionRoom,
+        on_delete=models.CASCADE,
+        related_name="auction_room",
+        verbose_name="경매 채팅방",
+    )
+    auction_bid_price = models.PositiveIntegerField(
+        default=0,
+        verbose_name="경매 제시 가격",
+    )
+    auction_user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="sent_messages",
+        related_name="message_user",
+        verbose_name="경매 채팅 참가자",
     )
-    auction_room = models.ForeignKey(
-        Auction,
-        on_delete=models.CASCADE,
-        related_name="auction_room_messages",
+    auction_message = models.TextField(
+        max_length=100,
+        verbose_name="경매 채팅 메세지",
     )
-    auction_message_type = models.TextField()
-    auction_bid_price = models.IntegerField(blank=True, null=True, verbose_name="입찰 가격")
-    auction_message_content = models.TextField()
-    auction_timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="메시지 전송 시간",
+    )
 
-    @classmethod
-    def lastest_bid_price(cls, auction_room):
-        """
-        경매방의 마지막 입찰가를 반환합니다.
-        """
-        lastest_bid = (
-            cls.objects.filter(
-                auction_room=auction_room, auction_bid_price__isnull=False
-            )
-            .order_by("-auction_timestamp")
-            .first()
-        )
-        return lastest_bid.auction_bid_price if lastest_bid else None
+    class Meta:
+        verbose_name = "경매 채팅 메세지"
+        verbose_name_plural = "경매 채팅 메세지"
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"경매 채팅방 :{self.auction_room}의 최종 가격 : {self.auction_bid_price}"
+
+
+@receiver(post_save, sender=AuctionMessage)
+def update_auction_end_time(sender, instance, **kwargs):
+    room = instance.auction_room
+    room.auction_end_at = timezone.now() + timedelta(seconds=30)
+    room.auction_final_price = instance.auction_bid_price
+    room.auction_winner = instance.auction_user
+    room.save()

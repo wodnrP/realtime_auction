@@ -23,7 +23,7 @@ class ProductsAdmin(admin.ModelAdmin):
         "seller_id",
         "product_price",
         "auction_start_at",
-        "auction_end_at",
+        # "auction_end_at",
         "auction_active",
     )
     list_filter = ("seller_id", "auction_active")
