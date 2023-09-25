@@ -1,24 +1,24 @@
 from django.contrib import admin
-from .models import AuctionRoom, AuctionMessage
+from .models import Auction
 
 
-@admin.register(AuctionRoom)
+@admin.register(Auction)
 class AuctionAdmin(admin.ModelAdmin):
     list_display = (
-        "pk",
-        "auction_host",
-        "auction_room_name",
-        "auction_start_at",
+        "auction_users",
+        "auction_chat_name",
+        "auction_chat_open_at",
     )
 
     list_display_links = (
-        "pk",
-        "auction_host",
-        "auction_room_name",
+        "auction_users",
+        "auction_chat_name",
     )
 
+    list_filter = ("auction_chat_open_at",)
+
     search_fields = (
-        "auction_host",
-        "auction_room_name",
-        "auction_start_at",
+        "auction_users",
+        "auction_chat_name",
+        "auction_chat_open_at",
     )
