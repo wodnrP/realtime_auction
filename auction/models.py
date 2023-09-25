@@ -68,10 +68,10 @@ class AuctionRoom(models.Model):
 
         # auction_end_at이 설정되지 않았을 경우, 시작 시간 + 3일로 설정합니다. == 참가자가 없는 경우
         if not self.auction_end_at:
-            self.auction_end_at = AuctionRoom.auction_start_at + timedelta(days=3)
+            self.auction_end_at = self.auction_start_at + timedelta(days=3)
 
         # 경매가 종료되었을 경우, 경매 활성화 여부를 False로 설정합니다.
-        if timezone.now() > self.auction_end_at:
+        if self.auction_end_at and timezone.now() > self.auction_end_at:
             self.auction_active = False
         super(AuctionRoom, self).save(*args, **kwargs)
 
