@@ -5,7 +5,6 @@ autobahn==23.6.2
 Automat==22.10.0
 billiard==4.1.0
 black==23.9.0
-celery==5.3.4
 certifi==2023.7.22
 cffi==1.15.1
 channels==4.0.0
