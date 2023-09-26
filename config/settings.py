@@ -33,7 +33,7 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -41,6 +41,8 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     "daphne",
     "channels",
+    "celery",
+    "redis",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -65,12 +67,35 @@ INSTALLED_APPS = [
 # Daphne
 ASGI_APPLICATION = "config.asgi.application"
 
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "asgiref.inmemory.ChannelLayer",
+#         "ROUTING": "auction.routing.channel_routing",
+#     },
+# }
+
+# redis
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "asgiref.inmemory.ChannelLayer",
-        "ROUTING": "auction.routing.channel_routing",
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
     },
 }
+
+# celery
+CELERY_APP = "config.celery:app"
+
+CELERY_BEAT_SCHEDULE = {
+    "check-auction-start-times": {
+        "task": "auction.tasks.check_and_create_auction_rooms",
+        "schedule": 60.0,  # 매 60초마다
+    },
+}
+
+# CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

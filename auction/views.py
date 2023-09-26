@@ -14,6 +14,12 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from django.db.models import Q, F
 
 
+def index(request):
+    return render(request, "auction/index.html")
+
+def room(request, room_name):
+    return render(request, "auction/room.html", {"room_name": room_name})
+
 class AuctionListView(APIView):
     def get(self, request):
         rooms = AuctionRoom.objects.all()
@@ -45,7 +51,7 @@ class UserAuctionListView(APIView):
         return Response(serializer.data)
 
 
-class AuctionRoomView(APIView):
+class NewAuctionRoomView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get_object(self, pk):
