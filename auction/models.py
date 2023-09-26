@@ -8,7 +8,7 @@ from product.models import Products
 
 
 def get_default_auction_end_at():
-    return timezone.now() + timedelta(minutes=30)
+    return Products.auction_start_at + timedelta(minutes=30)
 
 
 class AuctionRoom(models.Model):
@@ -84,7 +84,7 @@ class AuctionRoom(models.Model):
 
     @property
     def product_active(self):
-        return self.auction_room_name.auction_active
+        return self.auction_room_name.product_active
 
     class Meta:
         verbose_name = "경매 채팅 방"

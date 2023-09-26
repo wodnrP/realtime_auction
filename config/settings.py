@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "daphne",
     "channels",
     "celery",
+    "redis",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -88,7 +89,7 @@ CELERY_APP = "config.celery:app"
 
 CELERY_BEAT_SCHEDULE = {
     "check-auction-start-times": {
-        "task": "auctions.tasks.check_and_create_auction_rooms",
+        "task": "auction.tasks.check_and_create_auction_rooms",
         "schedule": 60.0,  # 매 60초마다
     },
 }

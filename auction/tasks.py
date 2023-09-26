@@ -23,3 +23,5 @@ def check_and_create_auction_rooms():
             auction_room_name=product,
             auction_active=True,  # 경매 활성화 상태로 설정
         )
+
+print("1")

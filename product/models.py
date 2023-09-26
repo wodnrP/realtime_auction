@@ -26,7 +26,7 @@ class Products(models.Model):
     def set_product_active(sender, instance, created, **kwargs):
         if created:
             if not instance.auction_end_at or instance.auction_end_at < timezone.now():
-                instance.product_active = False
+                instance.product_active = True
                 instance.save(update_fields=["product_active"])
 
     def __str__(self):
