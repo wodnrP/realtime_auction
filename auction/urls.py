@@ -5,7 +5,7 @@ from .views import AuctionListView, UserAuctionListView, NewAuctionRoomView, Auc
 
 urlpatterns = [
     path("", index, name="index"),
-    path("<str:room_name>", room, name="room"),
+    path("<int:auction_pk>", room, name="room"),
     path("list", AuctionListView.as_view(), name="auction-list"),
     path("list/<int:user_pk>", UserAuctionListView.as_view(), name="user-auction-list"),
     path("room/new", NewAuctionRoomView.as_view(), name="auction-room"),
