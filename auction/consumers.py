@@ -84,7 +84,7 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_send(
             self.room_group_name,
             {
-                "type": "auction_bid_price",
+                "type": "bid_price",
                 "bid_price": bid_price,
             },
         )
