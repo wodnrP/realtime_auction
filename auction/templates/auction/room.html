@@ -2,13 +2,18 @@
 <html>
 <head>
     <meta charset="utf-8"/>
-    <title>Chat Room</title>
+    <title>Auction Room</title>
 </head>
 <body>
-    <textarea id="chat-log" cols="100" rows="20"></textarea><br>
-    <input id="chat-message-input" type="text" size="100"><br>
-    <input id="chat-message-submit" type="button" value="Send">
-    {{ room_name|json_script:"room-name" }}
+    <h2>Auction Room: {{ room_name }}</h2>
+    
+    <textarea id="chat-log" cols="100" rows="20" readonly></textarea><br>
+    Message: <input id="chat-message-input" type="text" size="70">
+    <input id="chat-message-submit" type="button" value="Send"><br><br>
+    
+    Place Bid: <input id="bid-input" type="number" size="20">
+    <input id="bid-submit" type="button" value="Place Bid">
+    
     <script>
         const roomName = JSON.parse(document.getElementById('room-name').textContent);
 
@@ -22,7 +27,11 @@
 
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
-            document.querySelector('#chat-log').value += (data.message + '\n');
+            if (data.type === 'send_message') {
+                document.querySelector('#chat-log').value += (data.message + '\n');
+            } else if (data.type === 'bid_price') {
+                document.querySelector('#chat-log').value += ("Bid placed: " + data.bid_price + '\n');
+            }
         };
 
         chatSocket.onclose = function(e) {
@@ -40,9 +49,20 @@
             const messageInputDom = document.querySelector('#chat-message-input');
             const message = messageInputDom.value;
             chatSocket.send(JSON.stringify({
+                'type': 'send_message',
                 'message': message
             }));
             messageInputDom.value = '';
+        };
+
+        document.querySelector('#bid-submit').onclick = function(e) {
+            const bidInputDom = document.querySelector('#bid-input');
+            const bidPrice = bidInputDom.value;
+            chatSocket.send(JSON.stringify({
+                'type': 'bid_price',
+                'bid_price': bidPrice
+            }));
+            bidInputDom.value = '';
         };
     </script>
 </body>

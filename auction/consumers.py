@@ -1,245 +1,159 @@
-# import json
-# from channels.generic.websocket import AsyncWebsocketConsumer
-# from channels.db import database_sync_to_async
-# from django.utils import timezone
-# from .models import AuctionRoom, AuctionMessage
-
-
-# class AuctionConsumer(AsyncWebsocketConsumer):
-#     async def connect(self):
-#         # 로그인 확인
-#         if not self.scope["user"].is_authenticated:
-#             await self.close()
-#             return
-
-#         # 경매방 이름
-#         self.auction_pk = self.scope["url_route"]["kwargs"]["auction_pk"]
-#         self.room_group_name = f"auction_{self.auction_pk}"
-
-#         await self.channel_layer.group_add(
-#             self.room_group_name,
-#             self.channel_name,
-#         )
-#         await self.accept()
-#         await self.add_participant()
-
-#     async def disconnect(self, close_code):
-#         await self.channel_layer.group_discard(
-#             self.room_group_name,
-#             self.channel_name,
-#         )
-#         await self.remove_participant()
-
-#     async def receive(self, text_data):
-#         text_data_json = json.loads(text_data)
-#         message_type = text_data_json["type"]
-
-#         room = await self.get_room(self.auction_pk)
-
-#         if not room or room.auction_active == False:
-#             await self.close()
-#             return
-
-#         # 메세지 유형 별 함수 호출
-#         function_mapping = {
-#             "join": self.handle_join,
-#             "bid": self.handle_bid,
-#             "message": self.handle_message,
-#         }
-
-#         if message_type in function_mapping:
-#             await function_mapping[message_type](text_data_json)
-
-#     async def handle_join(self, data):
-#         current_user = self.scope["user"]
-#         await self.add_participant()
-#         await self.send_welcome_message(current_user.username)
-
-#     async def handle_bid(self, data):
-#         current_user = self.scope["user"]
-#         room = await self.get_auction_room(self.auction_pk)
-
-#         if room.auction_host == current_user:
-#             await self.send_error_message("경매 주최자는 입찰할 수 없습니다.")
-#             return
-
-#         if room.auction_end_at < timezone.now():
-#             await self.send_error_message("경매가 종료되었습니다.")
-#             return
-
-#         new_bid = int(data["bid"])
-#         if new_bid > room.auction_bid_price:
-#             await self.update_bid_price(new_bid)
-#             await self.send_bid_message(current_user.username, new_bid)
-#         else:
-#             await self.send_error_message("현재 입찰가보다 높은 가격을 제시해주세요.")
-
-#     async def handle_message(self, data):
-#         current_user = self.scope["user"]
-#         room = await self.get_auction_room(self.auction_pk)
-
-#         if room.auction_host != current_user:
-#             await self.send_error_message("메세지는 경매 주최자만 보낼 수 있습니다.")
-#             return
-
-#         message = data["message"]
-#         await self.send_message_message(current_user.username, message)
-
-#     async def send_welcome_message(self, username):
-#         await self.channel_layer.group_send(
-#             self.room_group_name,
-#             {
-#                 "type": "chat_message",
-#                 "message_type": "join",
-#                 "username": username,
-#             },
-#         )
-
-#     async def send_bid_message(self, username, bid):
-#         await self.channel_layer.group_send(
-#             self.room_group_name,
-#             {
-#                 "type": "chat_message",
-#                 "message_type": "bid",
-#                 "username": username,
-#                 "bid": bid,
-#             },
-#         )
-
-#     async def send_message_message(self, username, message):
-#         await self.channel_layer.group_send(
-#             self.room_group_name,
-#             {
-#                 "type": "chat_message",
-#                 "message_type": "message",
-#                 "username": username,
-#                 "message": message,
-#             },
-#         )
-
-#     async def send_error_message(self, message):
-#         await self.channel_layer.group_send(
-#             self.room_group_name,
-#             {
-#                 "type": "chat_message",
-#                 "message_type": "error",
-#                 "message": message,
-#             },
-#         )
-
-#     async def chat_message(self, event):
-#         await self.send(text_data=json.dumps(event))
-
-#     @database_sync_to_async
-#     def get_auction_room(self, auction_pk):
-#         return AuctionRoom.objects.get(pk=auction_pk)
-
-#     @database_sync_to_async
-#     def add_participant(self):
-#         room = AuctionRoom.objects.get(pk=self.auction_pk)
-#         room.auction_paticipants.add(self.scope["user"])
-#         room.paticipant_count += 1
-#         room.save()
-
-#     @database_sync_to_async
-#     def remove_participant(self):
-#         room = AuctionRoom.objects.get(pk=self.auction_pk)
-#         room.auction_paticipants.remove(self.scope["user"])
-#         room.paticipant_count -= 1
-#         room.save()
-
-#     @database_sync_to_async
-#     def update_bid_price(self, new_bid):
-#         room = AuctionRoom.objects.get(pk=self.auction_pk)
-#         room.auction_bid_price = new_bid
-#         room.save()
-
-#     @database_sync_to_async
-#     def add_message(self, username, message):
-#         room = AuctionRoom.objects.get(pk=self.auction_pk)
-#         AuctionMessage.objects.create(
-#             auction_room=room,
-#             auction_bid_price=room.auction_bid_price,
-#             auction_user=self.scope["user"],
-#             auction_message=message,
-#         )
-
-#     @database_sync_to_async
-#     def add_bid_message(self, username, bid):
-#         room = AuctionRoom.objects.get(pk=self.auction_pk)
-#         AuctionMessage.objects.create(
-#             auction_room=room,
-#             auction_bid_price=bid,
-#             auction_user=self.scope["user"],
-#             auction_message=f"{username}님이 {bid}원을 입찰하셨습니다.",
-#         )
-
-#     @database_sync_to_async
-#     def add_join_message(self, username):
-#         room = AuctionRoom.objects.get(pk=self.auction_pk)
-#         AuctionMessage.objects.create(
-#             auction_room=room,
-#             auction_bid_price=room.auction_bid_price,
-#             auction_user=self.scope["user"],
-#             auction_message=f"{username}님이 입장하셨습니다.",
-#         )
-
-#     @database_sync_to_async
-#     def add_error_message(self, message):
-#         room = AuctionRoom.objects.get(pk=self.auction_pk)
-#         AuctionMessage.objects.create(
-#             auction_room=room,
-#             auction_bid_price=room.auction_bid_price,
-#             auction_user=self.scope["user"],
-#             auction_message=message,
-#         )
-
-#     @database_sync_to_async
-#     def add_message_message(self, username, message):
-#         room = AuctionRoom.objects.get(pk=self.auction_pk)
-#         AuctionMessage.objects.create(
-#             auction_room=room,
-#             auction_bid_price=room.auction_bid_price,
-#             auction_user=self.scope["user"],
-#             auction_message=f"{username} : {message}",
-#         )
-
-from asgiref.sync import async_to_sync
-from channels.generic.websocket import WebsocketConsumer
+# utils
 import json
+from django.utils import timezone
+from datetime import datetime, timedelta
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
+
+# channels
+from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+from channels.layers import get_channel_layer
+
+# models
+from .models import AuctionRoom, AuctionMessage
+from product.models import Products
+from user.models import User
 
 
-class ChatConsumer(WebsocketConsumer):
-    def connect(self):
-        self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
-        self.room_group_name = "chat_%s" % self.room_name
+class AuctionConsumer(AsyncWebsocketConsumer):
+    # get_auction_room 메서드를 통해 AuctionRoom 인스턴스를 가져옵니다.
+    @database_sync_to_async
+    def get_auction_room(self):
+        try:
+            room = AuctionRoom.objects.get(auction_room=self.room_name)
+            return room
+        except ObjectDoesNotExist:
+            return None
 
-        # "room" 그룹에 가입
-        async_to_sync(self.channel_layer.group_add)(
-            self.room_group_name, self.channel_name
+    async def connect(self):
+        self.room_name = self.scope["url_route"]["kwargs"]["auction_pk"]
+        self.room_group_name = f"auction_{self.room_name}"
+
+        # 로그인 된 사용자만 채팅에 참여 가능
+        if not self.scope["user"].is_authenticated:
+            await self.close()
+            return
+
+        # 사용자를 채팅방 그룹에 추가
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name,
         )
+        await self.accept()
 
-        self.accept()
+        # 입장 한 사람을 채팅방에 알림
+        await self.send_message(f"{self.scope['user'].nickname}님이 입장하셨습니다.")
 
-    def disconnect(self, close_code):
-        # "room" 그룹에서 탈퇴
-        async_to_sync(self.channel_layer.group_discard)(
-            self.room_group_name, self.channel_name
-        )
+        # 참여자 수 증가
+        await self.update_participant_count(1)
 
-    # 웹소켓 으로 부터 메시지 수신
-    def receive(self, text_data):
+    async def disconnect(self, close_code):
+        user = self.scope["user"]
+        await self.send_message(f"{user.nickname}님이 퇴장하셨습니다.")
+
+        # 참여자 수 감소
+        await self.update_participant_count(-1)
+
+    async def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        message = text_data_json["message"]
+        message_type = text_data_json.get("type")
 
-        # "room" 그룹에 메시지 전송
-        async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name, {"type": "chat_message", "message": message}
+        if not message_type or message_type not in ["send_message", "bid_price"]:
+            return
+
+        if message_type == "send_message":
+            message = text_data_json["message"]
+            await self.send_message(message)
+
+        elif message_type == "bid_price":
+            bid_price = text_data_json["bid_price"]
+            await self.send_bid_price(bid_price)
+            await self.place_bid(bid_price)
+
+    async def send_message(self, message):
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                "type": "auction_message",
+                "message": message,
+            },
         )
 
-    # "room" 그룹에서 메시지 전송
-    def chat_message(self, event):
-        message = event["message"]
+    async def send_bid_price(self, bid_price):
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                "type": "auction_bid_price",
+                "bid_price": bid_price,
+            },
+        )
 
-        # 웹 소켓으로 메시지 전송
-        self.send(text_data=json.dumps({"message": message}))
+    async def auction_message(self, event):
+        message = event["message"]
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "send_message",
+                    "message": message,
+                }
+            )
+        )
+
+    async def auction_bid_price(self, event):
+        bid_price = event["bid_price"]
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "bid_price",
+                    "bid_price": bid_price,
+                }
+            )
+        )
+
+    @database_sync_to_async
+    def update_participant_count(self, count_change):
+        room = AuctionRoom.objects.get(auction_room=self.room_name)
+        room.paticipant_count += count_change
+        room.save()
+
+    async def check_auction_ended(self):
+        room = await self.get_auction_room()
+        if not room:
+            return False
+
+        expected_end_time = room.auction_start_at + timedelta(minutes=30)
+        last_bid_time = expected_end_time + timedelta(seconds=30)
+
+        if datetime.now(timezone.utc) >= last_bid_time:
+            room.auction_end_at = datetime.now(timezone.utc)
+            room.save()
+            return True
+        return False
+
+    @database_sync_to_async
+    def _update_bid(self, bid_price, user):
+        room = AuctionRoom.objects.get(auction_room=self.room_name)
+        last_bid_price = room.auction_final_price or room.starting_price
+
+        if bid_price <= last_bid_price:
+            return False
+
+        room.auction_final_price = bid_price
+        room.auction_winner = user
+        room.save()
+        return True
+
+    async def place_bid(self, bid_price):
+        # 동시성 문제를 해결하기 위한 락
+        async with transaction.atomic():
+            # 경매가 종료되었는지 확인
+            if await self.check_auction_ended():
+                await self.send_message("경매가 종료되었습니다.")
+                return False
+
+            updated = await database_sync_to_async(self._update_bid)(bid_price, self.scope["user"])
+
+            if updated:
+                # 메시지로 입찰 정보를 전송하지만, 데이터베이스에는 저장하지 않음.
+                await self.send_message(f"{self.scope['user'].nickname}님이 {bid_price}원으로 입찰하셨습니다.")

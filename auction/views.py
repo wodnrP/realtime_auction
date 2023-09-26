@@ -51,7 +51,7 @@ class UserAuctionListView(APIView):
         return Response(serializer.data)
 
 
-class AuctionRoomView(APIView):
+class NewAuctionRoomView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get_object(self, pk):

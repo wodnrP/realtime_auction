@@ -7,10 +7,8 @@ from user.models import User
 from product.models import Products
 
 
-def handle_new_message(sender, instance, created, **kwargs):
-    if created:
-        instance.auction_room.auction_end_at = timezone.now() + timedelta(seconds=30)
-        instance.auction_room.save()
+def get_default_auction_end_at():
+    return timezone.now() + timedelta(minutes=30)
 
 
 class AuctionRoom(models.Model):
@@ -50,9 +48,9 @@ class AuctionRoom(models.Model):
         default=0,
         verbose_name="경매 참여자 수",
     )
-
-    auction_end_at = models.DateTimeField()  # 마지막 메시지 전송 시간 + 30초
-
+    auction_end_at = models.DateTimeField(
+        default=get_default_auction_end_at,
+    )
     auction_active = models.BooleanField(
         default=False, verbose_name="경매 활성화 여부"
     )  # 경매 시작 시 True, 경매 종료 시 False
@@ -66,14 +64,15 @@ class AuctionRoom(models.Model):
         ):
             raise ValueError("경매 종료 시간은 경매 시작 시간보다 빠를 수 없습니다.")
 
-        # auction_end_at이 설정되지 않았을 경우, 시작 시간 + 3일로 설정합니다. == 참가자가 없는 경우
-        if not self.auction_end_at:
-            self.auction_end_at = self.auction_start_at + timedelta(days=3)
-
         # 경매가 종료되었을 경우, 경매 활성화 여부를 False로 설정합니다.
         if self.auction_end_at and timezone.now() > self.auction_end_at:
             self.auction_active = False
         super(AuctionRoom, self).save(*args, **kwargs)
+
+    def check_and_close_auction(self):
+        if self.auction_end_at and timezone.now() > self.auction_end_at:
+            self.auction_active = False
+            self.save()
 
     @property
     def starting_price(self):
