@@ -1,0 +1,143 @@
+{% comment %} <!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Auction Room</title>
+</head>
+<body>
+    <h2>Auction Room: {{ room_name }}</h2>
+    
+    <textarea id="chat-log" cols="100" rows="20" readonly></textarea><br>
+    Message: <input id="chat-message-input" type="text" size="70">
+    <input id="chat-message-submit" type="button" value="Send"><br><br>
+    {{ room_name | json_script:"room-name"}}
+
+    Place Bid: <input id="bid-input" type="number" size="20">
+    <input id="bid-submit" type="button" value="Place Bid">
+    
+    <script>
+        const roomName = JSON.parse(document.getElementById('room-name').textContent);
+
+        const chatSocket = new WebSocket(
+            'ws://'
+            + window.location.host
+            + '/ws/auction/'
+            + roomName
+            + '/'
+        );
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (data.type === 'send_message') {
+                document.querySelector('#chat-log').value += (data.message + '\n');
+            } else if (data.type === 'bid_price') {
+                document.querySelector('#chat-log').value += ("Bid placed: " + data.bid_price + '\n');
+            }
+        };
+
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        document.querySelector('#chat-message-input').focus();
+        document.querySelector('#chat-message-input').onkeyup = function(e) {
+            if (e.key === 'Enter') {  // enter, return
+                document.querySelector('#chat-message-submit').click();
+            }
+        };
+
+        document.querySelector('#chat-message-submit').onclick = function(e) {
+            const messageInputDom = document.querySelector('#chat-message-input');
+            const message = messageInputDom.value;
+            chatSocket.send(JSON.stringify({
+                'type': 'send_message',
+                'message': message
+            }));
+            messageInputDom.value = '';
+        };
+
+        document.querySelector('#bid-submit').onclick = function(e) {
+            const bidInputDom = document.querySelector('#bid-input');
+            const bidPrice = bidInputDom.value;
+            chatSocket.send(JSON.stringify({
+                'type': 'bid_price',
+                'bid_price': bidPrice
+            }));
+            bidInputDom.value = '';
+        };
+    </script>
+</body>
+</html> {% endcomment %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Auction Room</title>
+</head>
+<body>
+    <h2>Auction Room: {{ room_name }}</h2>
+    
+    <textarea id="chat-log" cols="100" rows="20" readonly></textarea><br>
+    Message: <input id="chat-message-input" type="text" size="70">
+    <input id="chat-message-submit" type="button" value="Send"><br><br>
+    <script id="room-name" type="application/json">{{ room_name }}</script>
+
+    Place Bid: <input id="bid-input" type="number" size="20">
+    <input id="bid-submit" type="button" value="Place Bid">
+    
+    <script>
+        const roomName = JSON.parse(document.getElementById('room-name').textContent);
+
+        const socketProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const chatSocket = new WebSocket(
+            socketProtocol
+            + '//'
+            + window.location.host
+            + '/ws/auction/'
+            + roomName
+            + '/'
+        );
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (data.type === 'send_message') {
+                document.querySelector('#chat-log').value += (data.message + '\n');
+            } else if (data.type === 'bid_price') {
+                document.querySelector('#chat-log').value += ("Bid placed: " + data.bid_price + '\n');
+            }
+        };
+
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        document.querySelector('#chat-message-input').focus();
+        document.querySelector('#chat-message-input').onkeyup = function(e) {
+            if (e.key === 'Enter') {
+                document.querySelector('#chat-message-submit').click();
+            }
+        };
+
+        document.querySelector('#chat-message-submit').onclick = function(e) {
+            const messageInputDom = document.querySelector('#chat-message-input');
+            const message = messageInputDom.value;
+            chatSocket.send(JSON.stringify({
+                'type': 'send_message',
+                'message': message
+            }));
+            messageInputDom.value = '';
+        };
+
+        document.querySelector('#bid-submit').onclick = function(e) {
+            const bidInputDom = document.querySelector('#bid-input');
+            const bidPrice = bidInputDom.value;
+            chatSocket.send(JSON.stringify({
+                'type': 'bid_price',
+                'bid_price': bidPrice
+            }));
+            bidInputDom.value = '';
+        };
+    </script>
+</body>
+</html>

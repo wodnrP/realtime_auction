@@ -62,6 +62,9 @@ class NewProductView(APIView):
     def post(self, request):
         serializer = ProductsSerializer(data=request.data)
         if serializer.is_valid():
+            current_date = serializer.validated_data["auction_start_at"]
+            final_date = current_date + timezone.timedelta(days=3)
+            serializer.validated_data["auction_end_at"] = final_date
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -88,7 +91,7 @@ class DeleteProductView(APIView):
     """
 
     def delete(self, request, pk):
-        product = get_object_or_404(Products, pk=pk, auction_active=True)
+        product = get_object_or_404(Products, pk=pk, product_active=True)
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

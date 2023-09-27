@@ -33,32 +33,69 @@ SECRET_KEY = env("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'user.apps.UserConfig',
-    'auction.apps.AuctionConfig',
-    'chat.apps.ChatConfig',
-    'payment.apps.PaymentConfig',
-    'product.apps.ProductConfig',
-    'wishlist.apps.WishlistConfig',
-    'penalty.apps.PenaltyConfig',
-    'report.apps.ReportConfig',
-        # External
+     "daphne",
+    "channels",
+    "celery",
+    "redis",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "user.apps.UserConfig",
+    "auction.apps.AuctionConfig",
+    "chat.apps.ChatConfig",
+    "payment.apps.PaymentConfig",
+    "product.apps.ProductConfig",
+    "wishlist.apps.WishlistConfig",
+    "penalty.apps.PenaltyConfig",
+    "report.apps.ReportConfig",
+    # External
     "mptt",
     "django_filters",
 ]
+
+# Daphne
+ASGI_APPLICATION = "config.asgi.application"
+
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "asgiref.inmemory.ChannelLayer",
+#         "ROUTING": "auction.routing.channel_routing",
+#     },
+# }
+
+# redis
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
+# celery
+CELERY_APP = "config.celery:app"
+
+CELERY_BEAT_SCHEDULE = {
+    "check-auction-start-times": {
+        "task": "auction.tasks.check_and_create_auction_rooms",
+        "schedule": 60.0,  # 매 60초마다
+    },
+}
+
+# CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -138,13 +175,17 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "ko-kr"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Seoul"
+
+DATE_INPUT_FORMATS = ["%Y-%m-%d"]
+
+DATETIME_FORMAT = "Y-m-d H:i:s"
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)

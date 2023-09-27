@@ -11,13 +11,11 @@ from django.dispatch import receiver
 class Products(models.Model):
     seller_id = models.ForeignKey(User, on_delete=models.CASCADE)
     product_name = models.CharField(max_length=100)
-    product_price = models.CharField(max_length=100)
+    product_price = models.IntegerField()
     product_content = models.TextField()
-    auction_start_at = models.DateTimeField(default=timezone.now)
-    auction_end_at = models.DateTimeField(
-        default=timezone.now() + timezone.timedelta(days=3)
-    )
-    auction_active = models.BooleanField(default=True)
+    product_active = models.BooleanField(default=True)
+    auction_start_at = models.DateTimeField(blank=True, null=True)
+    auction_end_at = models.DateTimeField(blank=True, null=True)
     category = TreeForeignKey("Categories", on_delete=models.PROTECT)
 
     class Meta:
@@ -25,10 +23,11 @@ class Products(models.Model):
         verbose_name_plural = "Products"
 
     @receiver(post_save, sender="product.Products")
-    def set_auction_active(sender, instance, **kwargs):
-        if not instance.auction_end_at or instance.auction_end_at < timezone.now():
-            instance.auction_active = False
-            instance.save()
+    def set_product_active(sender, instance, created, **kwargs):
+        if created:
+            if not instance.auction_end_at or instance.auction_end_at < timezone.now():
+                instance.product_active = True
+                instance.save(update_fields=["product_active"])
 
     def __str__(self):
         return self.product_name
