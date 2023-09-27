@@ -1,93 +1,48 @@
-{% comment %} <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8"/>
-    <title>Auction Room</title>
-</head>
-<body>
-    <h2>Auction Room: {{ room_name }}</h2>
-    
-    <textarea id="chat-log" cols="100" rows="20" readonly></textarea><br>
-    Message: <input id="chat-message-input" type="text" size="70">
-    <input id="chat-message-submit" type="button" value="Send"><br><br>
-    {{ room_name | json_script:"room-name"}}
-
-    Place Bid: <input id="bid-input" type="number" size="20">
-    <input id="bid-submit" type="button" value="Place Bid">
-    
-    <script>
-        const roomName = JSON.parse(document.getElementById('room-name').textContent);
-
-        const chatSocket = new WebSocket(
-            'ws://'
-            + window.location.host
-            + '/ws/auction/'
-            + roomName
-            + '/'
-        );
-
-        chatSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            if (data.type === 'send_message') {
-                document.querySelector('#chat-log').value += (data.message + '\n');
-            } else if (data.type === 'bid_price') {
-                document.querySelector('#chat-log').value += ("Bid placed: " + data.bid_price + '\n');
-            }
-        };
-
-        chatSocket.onclose = function(e) {
-            console.error('Chat socket closed unexpectedly');
-        };
-
-        document.querySelector('#chat-message-input').focus();
-        document.querySelector('#chat-message-input').onkeyup = function(e) {
-            if (e.key === 'Enter') {  // enter, return
-                document.querySelector('#chat-message-submit').click();
-            }
-        };
-
-        document.querySelector('#chat-message-submit').onclick = function(e) {
-            const messageInputDom = document.querySelector('#chat-message-input');
-            const message = messageInputDom.value;
-            chatSocket.send(JSON.stringify({
-                'type': 'send_message',
-                'message': message
-            }));
-            messageInputDom.value = '';
-        };
-
-        document.querySelector('#bid-submit').onclick = function(e) {
-            const bidInputDom = document.querySelector('#bid-input');
-            const bidPrice = bidInputDom.value;
-            chatSocket.send(JSON.stringify({
-                'type': 'bid_price',
-                'bid_price': bidPrice
-            }));
-            bidInputDom.value = '';
-        };
-    </script>
-</body>
-</html> {% endcomment %}
-
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8"/>
     <title>Auction Room</title>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: row;
+            margin: 0 auto;
+            justify-content: center;
+        }
+        .chat-box {
+            padding: 10px;
+            {% comment %} margin: 10px; {% endcomment %}
+        }
+    </style>
 </head>
 <body>
-    <h2>Auction Room: {{ room_name }}</h2>
-    
-    <textarea id="chat-log" cols="100" rows="20" readonly></textarea><br>
-    Message: <input id="chat-message-input" type="text" size="70">
-    <input id="chat-message-submit" type="button" value="Send"><br><br>
-    <script id="room-name" type="application/json">{{ room_name }}</script>
+    <h1 style="text-align:center;">Auction Room: {{ room_name }}</h1>
+    <br>
+    <!-- bid_price 표시 -->
+    <div style="text-align: center;">
+        <h2>현재 최고 가격: <span id="bid-price">{{ product.product_price|default:"0" }}</span></h2>
+    </div>
+    <br>
+    <div class = "container">
+        <div class="chat-box">
+            <h3 style="text-align: center;">채팅 메세지 창</h3>
+            <textarea id="chat-log" cols="50" rows="10" readonly></textarea><br>
+            Message: <input id="chat-message" type="text" size="30">
+            <input id="chat-message-submit" type="button" value="보내기">
+        </div>
+        <div class = "chat-box">
+            <h3 style="text-align: center;">입찰 창</h3>
+            <textarea id="bid-log" cols="50" rows="10" readonly></textarea><br>
+            입찰 가격: <input id="bid-input" type="number" size="20">
+            <input id="bid-submit" type="button" value="입찰하기">
+        </div>
+    </div>
 
-    Place Bid: <input id="bid-input" type="number" size="20">
-    <input id="bid-submit" type="button" value="Place Bid">
+    <script id="room_name" type="application/json">{{ room_name }}</script>
     
     <script>
-        const roomName = JSON.parse(document.getElementById('room-name').textContent);
+        const roomName = JSON.parse(document.getElementById('room_name').textContent);
 
         const socketProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
         const chatSocket = new WebSocket(
@@ -102,9 +57,13 @@
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
             if (data.type === 'send_message') {
+                // 채팅 메시지 입력
                 document.querySelector('#chat-log').value += (data.message + '\n');
             } else if (data.type === 'bid_price') {
-                document.querySelector('#chat-log').value += ("Bid placed: " + data.bid_price + '\n');
+                // bid_price 갱신
+                document.querySelector('#bid-price').textContent = data.bid_price;
+                // 입찰 로그 입력
+                document.querySelector('#bid-log').value += (data.bid_price + '\n');
             }
         };
 
@@ -112,16 +71,21 @@
             console.error('Chat socket closed unexpectedly');
         };
 
-        document.querySelector('#chat-message-input').focus();
-        document.querySelector('#chat-message-input').onkeyup = function(e) {
+        // 채팅 입력 이벤트 핸들러
+        document.querySelector('#chat-message').onkeyup = function(e) {
             if (e.key === 'Enter') {
                 document.querySelector('#chat-message-submit').click();
             }
         };
 
         document.querySelector('#chat-message-submit').onclick = function(e) {
-            const messageInputDom = document.querySelector('#chat-message-input');
+            const messageInputDom = document.querySelector('#chat-message');
             const message = messageInputDom.value;
+        
+            if (message.trim() === "") {  // 입력 값이 빈 문자열인지 확인
+                return;  // 빈 문자열이면 처리 중지
+            }
+        
             chatSocket.send(JSON.stringify({
                 'type': 'send_message',
                 'message': message
@@ -129,14 +93,51 @@
             messageInputDom.value = '';
         };
 
+        // 숫자를 원하는 형태의 문자열로 포맷하는 함수
+        function formatPrice(price) {
+            return price.toLocaleString('ko-KR') + '원';
+        }
+
+        window.addEventListener('DOMContentLoaded', (event) => {
+            const bidPriceSpan = document.querySelector('#bid-price');
+            const price = parseFloat(bidPriceSpan.textContent);
+            bidPriceSpan.textContent = formatPrice(price);
+        });
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (data.type === 'send_message') {
+                document.querySelector('#chat-log').value += (data.message + '\n');
+            } else if (data.type === 'bid_price') {
+                const formattedPrice = formatPrice(parseFloat(data.bid_price));
+                document.querySelector('#bid-price').textContent = formattedPrice;
+                document.querySelector('#bid-log').value += (formattedPrice + '\n');
+            }
+        };
+
+        // 입찰 숫자에서의 Enter 키 처리
+        document.querySelector('#bid-input').onkeyup = function(e) {
+            if (e.key === 'Enter') {
+                document.querySelector('#bid-submit').click();
+            }
+        };
+
+        // 입찰 입력 이벤트 핸들러
         document.querySelector('#bid-submit').onclick = function(e) {
             const bidInputDom = document.querySelector('#bid-input');
-            const bidPrice = bidInputDom.value;
-            chatSocket.send(JSON.stringify({
-                'type': 'bid_price',
-                'bid_price': bidPrice
-            }));
-            bidInputDom.value = '';
+            const bidPrice = parseFloat(bidInputDom.value);  // 문자열을 숫자로 변환
+            const currentBidPrice = parseFloat(document.querySelector('#bid-price').textContent.replace(/,/g, '').replace('원', ''));  // 현재 입찰 가격을 숫자로 변환 (콤마와 원 제거)
+        
+            if (bidPrice > currentBidPrice) {  // 입력된 입찰 가격이 현재 입찰 가격보다 높은 경우만 서버에 요청
+                chatSocket.send(JSON.stringify({
+                    'type': 'bid_price',
+                    'bid_price': bidPrice
+                }));
+                bidInputDom.value = '';
+            } else {
+                alert("입찰 가격은 현재 최고 입찰 가격보다 높아야 합니다.");  // 경고 메시지 출력
+                bidInputDom.value = '';
+            }
         };
     </script>
 </body>
