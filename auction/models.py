@@ -7,10 +7,6 @@ from user.models import User
 from product.models import Products
 
 
-def get_default_auction_end_at():
-    return Products.auction_start_at + timedelta(minutes=30)
-
-
 class AuctionRoom(models.Model):
     auction_host = models.ForeignKey(
         User,
@@ -21,7 +17,7 @@ class AuctionRoom(models.Model):
     auction_room_name = models.OneToOneField(
         Products,
         on_delete=models.CASCADE,
-        related_name="auction_product",
+        related_name="auction_room",
         verbose_name="경매 물품",
     )
     auction_final_price = models.PositiveIntegerField(
@@ -49,7 +45,7 @@ class AuctionRoom(models.Model):
         verbose_name="경매 참여자 수",
     )
     auction_end_at = models.DateTimeField(
-        default=get_default_auction_end_at,
+        default=timezone.now()+timedelta(minutes=30),
     )
     auction_active = models.BooleanField(
         default=False, verbose_name="경매 활성화 여부"
@@ -69,10 +65,6 @@ class AuctionRoom(models.Model):
             self.auction_active = False
         super(AuctionRoom, self).save(*args, **kwargs)
 
-    def check_and_close_auction(self):
-        if self.auction_end_at and timezone.now() > self.auction_end_at:
-            self.auction_active = False
-            self.save()
 
     @property
     def starting_price(self):
@@ -127,12 +119,3 @@ class AuctionMessage(models.Model):
 
     def __str__(self):
         return f"경매 채팅방 :{self.auction_room}의 최종 가격 : {self.auction_bid_price}"
-
-
-@receiver(post_save, sender=AuctionMessage)
-def update_auction_end_time(sender, instance, **kwargs):
-    room = instance.auction_room
-    room.auction_end_at = timezone.now() + timedelta(seconds=30)
-    room.auction_final_price = instance.auction_bid_price
-    room.auction_winner = instance.auction_user
-    room.save()
