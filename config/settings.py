@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "channels",
     "django_celery_beat",
     "django_celery_results",
+    'corsheaders',
     
     "django.contrib.admin",
     "django.contrib.auth",
@@ -103,6 +104,7 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Seoul'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', 
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -117,7 +119,7 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     )
 }
-
+CORS_ORIGIN_WHITELIST = ['http://localhost:5500']
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
