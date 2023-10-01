@@ -39,10 +39,11 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-     "daphne",
+    "daphne",
     "channels",
-    "celery",
-    "redis",
+    "django_celery_beat",
+    "django_celery_results",
+    
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -85,17 +86,21 @@ CHANNEL_LAYERS = {
 }
 
 # celery
-CELERY_APP = "config.celery:app"
-
 CELERY_BEAT_SCHEDULE = {
     "check-auction-start-times": {
         "task": "auction.tasks.check_and_create_auction_rooms",
-        "schedule": 60.0,  # 매 60초마다
+        'schedule': timedelta(seconds=10)
+
     },
 }
 
-# CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+CELERY_ALWAYS_EAGER = True
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Seoul'
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
