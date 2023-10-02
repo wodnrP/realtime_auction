@@ -17,23 +17,15 @@ from user.models import User
 
 
 class AuctionConsumer(AsyncWebsocketConsumer):
-    # get_auction_room 메서드를 통해 AuctionRoom 인스턴스를 가져옵니다.
-    # @database_sync_to_async
-    # def get_auction_room(self):
-    #     try:
-    #         room = AuctionRoom.objects.get(auction_room=self.room_name)
-    #         return room
-    #     except ObjectDoesNotExist:
-    #         return None
-
     async def connect(self):
         self.room_name = self.scope["url_route"]["kwargs"]["auction_pk"]
         self.room_group_name = f"auction_{self.room_name}"
+        self.user = self.scope["user"]
 
         # 로그인 된 사용자만 채팅에 참여 가능
-        # if not self.scope["user"].is_authenticated:
-        #     await self.close()
-        #     return
+        if not self.user.is_authenticated:
+            await self.close()
+            return
 
         # 사용자를 채팅방 그룹에 추가
         await self.channel_layer.group_add(
@@ -43,8 +35,7 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
         # 입장 한 사람을 채팅방에 알림
-        # await self.send_message(f"{self.scope['user'].nickname}님이 입장하셨습니다.")
-        await self.send_message(f"입장하셨습니다.")
+        await self.send_message(f"{self.user.nickname} 님이 입장하셨습니다.")
 
         # 참여자 수 증가
         # await self.update_participant_count(1)
@@ -71,6 +62,9 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         elif message_type == "bid_price":
             bid_price = text_data_json["bid_price"]
             await self.send_bid_price(bid_price)
+            await self.create_or_update_auction_message(
+                self.user, self.room_name, bid_price
+            )
             # await self.place_bid(bid_price)
 
     async def send_message(self, message):
@@ -113,6 +107,27 @@ class AuctionConsumer(AsyncWebsocketConsumer):
             )
         )
 
+    @database_sync_to_async
+    def create_or_update_auction_message(self, user, room_name, bid_price):
+        try:
+            auction_room = AuctionRoom.objects.filter(pk=room_name)
+            if auction_room.exists():
+                auction_message = AuctionMessage.objects.filter(
+                    auction_room=auction_room[0], auction_user=user
+                )
+                if not auction_message.exists():
+                    new_auction_message = AuctionMessage.objects.create(
+                        auction_room=auction_room[0],
+                        auction_user=user,
+                        auction_bid_price=bid_price,
+                    )
+                    new_auction_message.save()
+                else:
+                    auction_message.update(auction_bid_price=bid_price)
+
+        except ObjectDoesNotExist:
+            return None
+
     # @database_sync_to_async
     # def update_participant_count(self, count_change):
     #     room = AuctionRoom.objects.get(auction_room=self.room_name)
@@ -154,8 +169,8 @@ class AuctionConsumer(AsyncWebsocketConsumer):
     #             await self.send_message("경매가 종료되었습니다.")
     #             return False
 
-            # updated = await database_sync_to_async(self._update_bid)(bid_price, self.scope["user"])
+    # updated = await database_sync_to_async(self._update_bid)(bid_price, self.scope["user"])
 
-            # if updated:
-                # 메시지로 입찰 정보를 전송하지만, 데이터베이스에는 저장하지 않음.
-                # await self.send_message(f"{self.scope['user'].nickname}님이 {bid_price}원으로 입찰하셨습니다.")
+    # if updated:
+    # 메시지로 입찰 정보를 전송하지만, 데이터베이스에는 저장하지 않음.
+    # await self.send_message(f"{self.scope['user'].nickname}님이 {bid_price}원으로 입찰하셨습니다.")
