@@ -90,7 +90,7 @@ class AuctionMessage(models.Model):
     auction_room = models.ForeignKey(
         AuctionRoom,
         on_delete=models.CASCADE,
-        related_name="auction_room",
+        related_name="auction_message",
         verbose_name="경매 채팅방",
     )
     auction_bid_price = models.PositiveIntegerField(
