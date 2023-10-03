@@ -21,8 +21,7 @@ class AuctionRoom(models.Model):
         verbose_name="경매 물품",
     )
     auction_final_price = models.PositiveIntegerField(
-        null=True,
-        blank=True,
+        default = 0,
         verbose_name="경매 최종 가격",
     )
     auction_winner = models.ForeignKey(
@@ -40,10 +39,6 @@ class AuctionRoom(models.Model):
         verbose_name="경매 참여자들",
     )
 
-    paticipant_count = models.PositiveIntegerField(
-        default=0,
-        verbose_name="경매 참여자 수",
-    )
     auction_end_at = models.DateTimeField(
         default=timezone.now()+timedelta(minutes=30),
     )

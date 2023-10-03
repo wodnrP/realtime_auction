@@ -11,6 +11,10 @@ class AuctionRoomSerializer(serializers.ModelSerializer):
 
 class AuctionRoomListSerializer(serializers.ModelSerializer):
     auction_room_name = ProductsSerializer(read_only=True)
+    paticipant_count = serializers.SerializerMethodField(read_only=True)
+    
+    def get_participant_count(self, obj):
+        return obj.auction_paticipants.count()
     
     class Meta:
         model = AuctionRoom
@@ -29,7 +33,6 @@ class AuctionRoomListSerializer(serializers.ModelSerializer):
             "auction_host",
             "auction_winner",
             "auction_final_price",
-            "paticipant_count",
             "auction_active",
         )
 
