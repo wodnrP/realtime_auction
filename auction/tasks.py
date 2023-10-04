@@ -26,10 +26,20 @@ def check_and_create_auction_rooms():
                 auction_room_check.save()
             
         except:
-            AuctionRoom.objects.create(
-                auction_host=product.seller_id,
-                auction_room_name=product,
-                auction_active=True,  # 경매 활성화 상태로 설정
-            )
+            #product 등록 시 auction_end_at을 지정하지 않았다면 default값으로 설정
+            if not product.auction_end_at:
+                AuctionRoom.objects.create(
+                    auction_host=product.seller_id,
+                    auction_room_name=product,
+                    auction_active=True  # 경매 활성화 상태로 설정
+                )
+            else:
+                AuctionRoom.objects.create(
+                    auction_host=product.seller_id,
+                    auction_room_name=product,
+                    auction_end_at = product.auction_end_at,
+                    auction_active=True
+                )
+                
 
     return 'check auction'
