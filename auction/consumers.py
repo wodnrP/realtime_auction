@@ -1,17 +1,12 @@
 import json
 from django.utils import timezone
-from datetime import datetime, timedelta
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from channels.layers import get_channel_layer
 
 from .models import AuctionRoom, AuctionMessage
-from product.models import Products
-from user.models import User
-
 
 class AuctionConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -22,7 +17,13 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         # 로그인 된 사용자만 채팅에 참여 가능
         if not self.user.is_authenticated:
             await self.close()
-            return
+
+        host = await self.get_auction_room()
+
+        if not host:
+            await self.close()
+        else:
+            self.host = host
 
         # 사용자를 채팅방 그룹에 추가
         await self.channel_layer.group_add(
@@ -31,21 +32,13 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         )
 
         await self.accept()
-
-        # 입장 한 사람을 채팅방에 알림
         await self.send_message(f"{self.user.nickname} 님이 입장하셨습니다.")
-        #auction_participants에 유저 추가
         await self.enter_or_exit_room("enter")
 
     async def disconnect(self, close_code):
         await self.send_message(f"{self.user.nickname}님이 퇴장하셨습니다.")
-        
-        #auction 마감 전 퇴장 시 auction_participants에서 유저 제거
         await self.enter_or_exit_room("exit")
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-
-        # 참여자 수 감소
-        # await self.update_participant_count(-1)
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
@@ -59,14 +52,21 @@ class AuctionConsumer(AsyncWebsocketConsumer):
             await self.send_message(message)
 
         elif message_type == "bid_price":
-            bid_price = text_data_json["bid_price"]
-            await self.create_or_update_auction_message(
-                self.user, self.room_name, bid_price
-            )
-            max_price_check = await self.update_max_price(bid_price)
-            if max_price_check:
-                await self.send_bid_price(bid_price)
-                await self.send_message(f"현재 최고 금액 제시자는 {self.user.nickname}님 입니다.")
+            if self.host == self.user:
+                await self.send(
+                    text_data=json.dumps(
+                        {"type": "error_message", "message": "host는 금액을 제시할 수 없습니다."}
+                    )
+                )
+            else:
+                bid_price = text_data_json["bid_price"]
+                await self.create_or_update_auction_message(
+                    self.user, self.room_name, bid_price
+                )
+                max_price_check = await self.update_max_price(bid_price)
+                if max_price_check:
+                    await self.send_bid_price(bid_price)
+                    await self.send_message(f"현재 최고 금액 제시자는 {self.user.nickname}님 입니다.")
 
             # await self.place_bid(bid_price)
 
@@ -111,15 +111,31 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         )
 
     @database_sync_to_async
+    def get_auction_room(self):
+        room = AuctionRoom.objects.filter(pk=self.room_name)
+
+        if not room.exists():
+            return False
+
+        elif not room[0].auction_active:
+            return False
+
+        return room[0].auction_host
+
+    @database_sync_to_async
     def enter_or_exit_room(self, txt):
+        """
+        auction room 입장 시 auction_participants에 참가자 추가
+        auction_end_at 전에 퇴장 시 auction_participants에서 참가자 제거
+        > auction_participants에는 경매에 끝까지 참여한 사람이 남음
+        """
         auction_room = AuctionRoom.objects.get(pk=self.room_name)
-        print("now", timezone.now(), "end", auction_room.auction_end_at)
+
         if txt == "enter" and (self.user not in auction_room.auction_paticipants.all()):
             auction_room.auction_paticipants.add(self.user)
+
         elif txt == "exit" and auction_room.auction_end_at > timezone.now():
             auction_room.auction_paticipants.remove(self.user)
-
-        print(auction_room.auction_paticipants.count())
 
     @database_sync_to_async
     def create_or_update_auction_message(self, user, room_name, bid_price):
@@ -129,7 +145,7 @@ class AuctionConsumer(AsyncWebsocketConsumer):
                 auction_message = AuctionMessage.objects.filter(
                     auction_room=auction_room[0], auction_user=user
                 )
-                print("message", auction_message)
+
                 if not auction_message.exists():
                     new_auction_message = AuctionMessage.objects.create(
                         auction_room=auction_room[0],
@@ -137,9 +153,12 @@ class AuctionConsumer(AsyncWebsocketConsumer):
                         auction_bid_price=bid_price,
                     )
                     new_auction_message.save()
+                    return True
                 else:
                     if auction_message[0].auction_bid_price < bid_price:
                         auction_message.update(auction_bid_price=bid_price)
+                        return True
+                    return False
 
         except ObjectDoesNotExist:
             return None
@@ -154,44 +173,3 @@ class AuctionConsumer(AsyncWebsocketConsumer):
             auction_room.save()
             return True
         return False
-
-    # async def check_auction_ended(self):
-    #     room = await self.get_auction_room()
-    #     if not room:
-    #         return False
-
-    #     expected_end_time = room.auction_start_at + timedelta(minutes=30)
-    #     last_bid_time = expected_end_time + timedelta(seconds=30)
-
-    #     if datetime.now(timezone.utc) >= last_bid_time:
-    #         room.auction_end_at = datetime.now(timezone.utc)
-    #         room.save()
-    #         return True
-    #     return False
-
-    # @database_sync_to_async
-    # def _update_bid(self, bid_price, user):
-    #     room = AuctionRoom.objects.get(auction_room=self.room_name)
-    #     last_bid_price = room.auction_final_price or room.starting_price
-
-    #     if bid_price <= last_bid_price:
-    #         return False
-
-    #     room.auction_final_price = bid_price
-    #     room.auction_winner = user
-    #     room.save()
-    #     return True
-
-    # async def place_bid(self, bid_price):
-    #     # 동시성 문제를 해결하기 위한 락
-    #     async with transaction.atomic():
-    #         # 경매가 종료되었는지 확인
-    #         if await self.check_auction_ended():
-    #             await self.send_message("경매가 종료되었습니다.")
-    #             return False
-
-    # updated = await database_sync_to_async(self._update_bid)(bid_price, self.scope["user"])
-
-    # if updated:
-    # 메시지로 입찰 정보를 전송하지만, 데이터베이스에는 저장하지 않음.
-    # await self.send_message(f"{self.scope['user'].nickname}님이 {bid_price}원으로 입찰하셨습니다.")
