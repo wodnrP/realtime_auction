@@ -6,10 +6,10 @@ class PenaltySerializer(serializers.ModelSerializer):
     sell_penalties_count = serializers.SerializerMethodField(read_only=True)
     
     def get_buy_penalties_count(self, obj):
-        return Penalty.objects.filter(penalty_type='buy').count()
+        return Penalty.objects.filter(user_id = obj.user_id, penalty_type='buy').count()
     
     def get_sell_penalties_count(self, obj):
-        return Penalty.objects.filter(penalty_type='sell').count()
+        return Penalty.objects.filter(user_id = obj.user_id, penalty_type='sell').count()
     
     class Meta:
         model = Penalty
