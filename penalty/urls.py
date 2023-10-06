@@ -1,5 +1,7 @@
 from django.urls import path
-from django.conf import settings
+
+from penalty import views
 
 urlpatterns = [ 
+    path("<int:user_id>", views.PenaltyView.as_view(), name="penalty"),
 ]

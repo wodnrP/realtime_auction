@@ -1,3 +1,4 @@
 from django.contrib import admin
+from penalty.models import Penalty
 
-# Register your models here.
+admin.site.register(Penalty)
