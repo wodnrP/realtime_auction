@@ -10,3 +10,4 @@ class Penalty(models.Model):
     user_id = models.ForeignKey(User,  on_delete=models.CASCADE)
     penalty_type = models.CharField(max_length=4,choices=PeanaltyTypeChoice.choices)
     penalty_content = models.TextField()
+    penalty_date = models.DateTimeField(auto_now_add=True)
