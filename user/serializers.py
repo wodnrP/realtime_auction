@@ -2,6 +2,7 @@ import re
 
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from user.models import User
 
@@ -35,13 +36,13 @@ class UserSerializer(serializers.ModelSerializer):
             instance.username = validated_data.get("username", instance.username)
             instance.save()
 
-        if validated_data["nickname"] == "":
-            instance.nickname = f"user{instance.id}"
-            instance.save()
-
-        elif "nickname" in validated_data:
-            instance.nickname = validated_data.get("nickname", instance.nickname)
-            instance.save()
+        if "nickname" in validated_data:
+            if validated_data["nickname"] == "":
+                instance.nickname = f"user{instance.id}"
+                instance.save()
+            else:
+                instance.nickname = validated_data.get("nickname", instance.nickname)
+                instance.save()
 
         if "address" in validated_data:
             instance.address = validated_data.get("address", instance.address)
@@ -76,3 +77,20 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token["phone_number"] = user.phone_number
         return token
+
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+    default_error_messages = {
+        'bad_token': 'Token is invalid or expired'
+    }
+
+    def validate(self, attrs):
+        self.token = attrs['refresh']
+        return attrs
+
+    def save(self, **kwargs):
+        try:
+            RefreshToken(self.token).blacklist()
+        except:
+            self.fail('bad_token')

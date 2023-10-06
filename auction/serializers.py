@@ -1,35 +1,35 @@
 from rest_framework import serializers
 from .models import AuctionRoom, AuctionMessage
 from user.serializers import UserSerializer
-
+from product.serializers import ProductsSerializer
 
 class AuctionRoomSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AuctionRoom
-        fields = "__all__"
-
-
-class AuctionRoomListSerializer(serializers.ModelSerializer):
+    auction_room_name = ProductsSerializer(read_only=True)
+    paticipant_count = serializers.SerializerMethodField(read_only=True)
+    
+    def get_paticipant_count(self, obj):
+        return obj.auction_paticipants.count()
+    
     class Meta:
         model = AuctionRoom
         fields = (
             "pk",
             "auction_host",
-            "product_name",
+            "auction_room_name",
             "auction_winner",
             "auction_final_price",
             "paticipant_count",
             "auction_active",
+            "auction_end_at"
         )
 
         read_only_fields = (
             "pk",
             "auction_host",
-            "product_name",
             "auction_winner",
             "auction_final_price",
-            "paticipant_count",
             "auction_active",
+            "auction_end_at"
         )
 
 
