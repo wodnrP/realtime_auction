@@ -12,6 +12,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django_asgi_app = get_asgi_application()
 
 import auction.routing
+import chat.routing
 
 application = ProtocolTypeRouter(
     {
@@ -20,6 +21,7 @@ application = ProtocolTypeRouter(
             WebSocketJWTAuthMiddleware(
                 URLRouter(
                     auction.routing.websocket_urlpatterns,
+                    chat.routing.websocket_urlpatterns,
                 )
             ),
     }
