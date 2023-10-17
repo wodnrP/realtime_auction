@@ -3,11 +3,11 @@ from .models import Chatting, Message
 from auction.serializers import AuctionRoomSerializer
 
 class ChattingSerializer(serializers.ModelSerializer):
-    chat_room_name = AuctionRoomSerializer(read_only=True)
+    auction_id = AuctionRoomSerializer(read_only=True)
 
     class Meta:
         model = Chatting
-        fields = ("pk, chat_room_name")
+        fields = ("pk, auction_id")
 
 class MessageSerializer(serializers.ModelSerializer):
     host = serializers.StringRelatedField()
