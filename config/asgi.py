@@ -20,8 +20,8 @@ application = ProtocolTypeRouter(
         "websocket": 
             WebSocketJWTAuthMiddleware(
                 URLRouter(
-                    auction.routing.websocket_urlpatterns,
-                    chat.routing.websocket_urlpatterns,
+                    auction.routing.websocket_urlpatterns
+                    + chat.routing.websocket_urlpatterns
                 )
             ),
     }
