@@ -14,9 +14,9 @@ class ChattingAdmin(admin.ModelAdmin):
         "auction_id",
     )
 
-    search_fields = (
-        "auction_id"
-    )
+    # search_fields = (
+    #     "auction_id"
+    # )
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
