@@ -14,17 +14,12 @@ class ChattingAdmin(admin.ModelAdmin):
         "auction_id",
     )
 
-    # search_fields = (
-    #     "auction_id"
-    # )
-
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
     list_display = (
         "pk",
         "chatting_id",
         "sender_id",
-        "message_type",
         "message_content",
         "message_time",
     )
@@ -33,7 +28,6 @@ class MessageAdmin(admin.ModelAdmin):
         "pk",
         "chatting_id",
         "sender_id",
-        "message_type",
         "message_content",
         "message_time",
     )
