@@ -21,10 +21,6 @@ class Message(models.Model):
         on_delete=models.CASCADE,
         verbose_name="메세지 발신자",
     )
-    message_type=models.TextField(
-        max_length=100,
-        verbose_name="메세지 유형",
-    )
     message_content=models.TextField(
         max_length=200,
         verbose_name="메세지 내용",
