@@ -60,7 +60,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # 채팅 내용 저장
     @database_sync_to_async
     def crete_or_update_chat_message(self, user, room_name, message):
-        print(1)
         try:
             chat_room = Chatting.objects.filter(auction_id=room_name)
             if chat_room.exists():
