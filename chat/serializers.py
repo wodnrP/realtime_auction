@@ -7,7 +7,7 @@ class ChattingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Chatting
-        fields = ("pk, auction_id")
+        fields = ("pk", "auction_id")
 
 class MessageSerializer(serializers.ModelSerializer):
     host = serializers.StringRelatedField()
