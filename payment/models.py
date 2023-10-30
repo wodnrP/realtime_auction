@@ -13,7 +13,8 @@ class Payments(models.Model):
     payment_date = models.DateTimeField(auto_now_add=True)
     total_price = models.ForeignKey(AuctionRoom, on_delete=models.CASCADE)
     paid = models.BooleanField(default=False)
-
+    # 카카오페이 임시 URL -> 프론트 만들기 전까지만 사용
+    kakao_pay_url = models.URLField()
     class Meta:
         verbose_name = "Payment"
         verbose_name_plural = "Payments"
