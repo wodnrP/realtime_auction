@@ -119,7 +119,7 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     )
 }
-CORS_ORIGIN_WHITELIST = ["http://localhost:5500"]
+CORS_ALLOWED_ORIGINS = ["http://localhost:5500"]
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
@@ -209,3 +209,9 @@ AUTH_USER_MODEL = "user.User"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+BASE_URL = "http://127.0.0.1:8000"
+
+# Kakao Pay
+KAKAO_PAY = env("KAKAO_PAY")
+CSRF_TRUSTED_ORIGINS = ['http://localhost:5500']
