@@ -69,7 +69,6 @@ sqlparse==0.2.4
 tomli==2.0.1
 tornado==6.3.3
 Twisted==23.8.0
-#twisted-iocpsupport==1.0.4
 txaio==23.1.1
 typing_extensions==4.7.1
 tzdata==2023.3
@@ -78,3 +77,12 @@ vine==5.0.0
 wcwidth==0.2.6
 zope.event==5.0
 zope.interface==6.0
+
+# mac os
+#twisted-iocpsupport==1.0.4
+
+# windows os
+#twisted-iocpsupport==1.0.4
+
+# linux os
+#twisted-iocpsupport==1.0.4
