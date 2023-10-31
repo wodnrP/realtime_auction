@@ -1,4 +1,3 @@
-from django.shortcuts import render, redirect
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.conf import settings
@@ -12,20 +11,28 @@ from .serializers import (
     KakaoFailSerializer,
 )
 from rest_framework.response import Response
-import requests
 from payment.tasks import create_payment_for_auction_winner  # Celery 작업 가져오기
 from auction.models import AuctionRoom
 from rest_framework import status
 from payment.payment_platform.kakao_pay import KakaoPay
 import json
+from datetime import timedelta
+from django.utils import timezone
 
 # 프론트 세션,쿠키,캐시 대용
-payment_dic={}
+payment_dic = {}
+
 
 class WinningdBidListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        # 2일 지나도 결제가 안된 상품 payment에서 삭제
+        expired_payments = Payments.objects.filter(buyer=request.user, paid=False)
+        for payment in expired_payments:
+            if payment.payment_date + timedelta(minutes=5) <= timezone.now():
+                expired_payments.delete()
+
         # 사용자의 낙찰 목록 중 아직 지불되지 않은 낙찰 목록 필터링
         winning_bids = Payments.objects.filter(buyer=request.user)
         winning_auction = AuctionRoom.objects.filter(auction_winner=request.user)
@@ -37,7 +44,7 @@ class WinningdBidListView(APIView):
             ).values_list("pk", flat=True)
 
             for room_id in room_ids:
-                try: 
+                try:
                     if AuctionRoom.objects.get(pk=room_id, payment_active=False):
                         create_payment_for_auction_winner.delay(room_id)
                 except:
@@ -57,9 +64,8 @@ class KakaoPayReady(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-
         payment_id = request.data.get("paymentId")
-        ##### TODO: Task1  프론트 생기면 해당 작업 수정 
+        ##### TODO: Task1  프론트 생기면 해당 작업 수정
         global payment_dic
         payment_dic[request.user] = payment_id
         ####
@@ -92,10 +98,10 @@ class KakaoPayReady(APIView):
         #####
 
     def get(self, request):
-        # TODO: Task1. 프론트 생기면 해당 작업 수정 
+        # TODO: Task1. 프론트 생기면 해당 작업 수정
         # global 딕셔너리 사용 -> 프론트 생기면 수정해야함
         global payment_dic
-        
+
         if payment_dic[request.user]:
             try:
                 obj = Payments.objects.get(pk=payment_dic[request.user], paid=False)
@@ -115,7 +121,7 @@ class KakaoPayApprovalView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        # TODO: Task1. 프론트 생기면 해당 작업 수정 
+        # TODO: Task1. 프론트 생기면 해당 작업 수정
         # global 딕셔너리 사용 -> 프론트 생기면 수정해야함
         global payment_dic
 
@@ -139,9 +145,8 @@ class KakaoPayApprovalView(APIView):
         return Response(data)
 
     def get(self, request):
-
         try:
-            # TODO: Task1. 프론트 생기면 해당 작업 수정 
+            # TODO: Task1. 프론트 생기면 해당 작업 수정
             # global 딕셔너리 사용 -> 프론트 생기면 수정해야함
             global payment_dic
             obj = Payments.objects.get(payment_dic[request.user], paid=True)
