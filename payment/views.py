@@ -19,6 +19,8 @@ from rest_framework import status
 from payment.payment_platform.kakao_pay import KakaoPay
 import json
 
+# 프론트 세션,쿠키,캐시 대용
+payment_dic={}
 
 class WinningdBidListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -35,7 +37,11 @@ class WinningdBidListView(APIView):
             ).values_list("pk", flat=True)
 
             for room_id in room_ids:
-                create_payment_for_auction_winner.delay(room_id)
+                try: 
+                    if AuctionRoom.objects.get(pk=room_id, payment_active=False):
+                        create_payment_for_auction_winner.delay(room_id)
+                except:
+                    print("Fail creating payment instance error")
 
             return Response(
                 "Creating Payments in progress.", status=status.HTTP_202_ACCEPTED
@@ -51,7 +57,13 @@ class KakaoPayReady(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+
         payment_id = request.data.get("paymentId")
+        ##### TODO: Task1  프론트 생기면 해당 작업 수정 
+        global payment_dic
+        payment_dic[request.user] = payment_id
+        ####
+
         payment = get_object_or_404(Payments, pk=payment_id)
         id = payment.pk
         user = payment.buyer
@@ -65,7 +77,7 @@ class KakaoPayReady(APIView):
         # 터미널에서 카카오 페이 링크 소스 확인
         print(kakao_pay)
 
-        ##### 프론트작업
+        ##### TODO: Task1. 프론트작업
         data = {"KaKaoURL": str(kakao_pay)}
         json_dumps_data = json.dumps(data)
         json_data = json.loads(json_dumps_data)
@@ -77,29 +89,39 @@ class KakaoPayReady(APIView):
         else:
             return Response(serializer.errors, status=400)
 
-    #####
+        #####
 
     def get(self, request):
-        try:
-            obj = Payments.objects.get(buyer=request.user, paid=False)
-            serializer = KakaoPayReadySerializer(obj)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Payments.DoesNotExist:
-            return Response(
-                {"error": "Payment not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        # TODO: Task1. 프론트 생기면 해당 작업 수정 
+        # global 딕셔너리 사용 -> 프론트 생기면 수정해야함
+        global payment_dic
+        
+        if payment_dic[request.user]:
+            try:
+                obj = Payments.objects.get(pk=payment_dic[request.user], paid=False)
+                serializer = KakaoPayReadySerializer(obj)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Payments.DoesNotExist:
+                return Response(
+                    {"error": "Payment not found"}, status=status.HTTP_404_NOT_FOUND
+                )
+            except Exception as e:
+                return Response(
+                    {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
 
 class KakaoPayApprovalView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        # TODO: Task1. 프론트 생기면 해당 작업 수정 
+        # global 딕셔너리 사용 -> 프론트 생기면 수정해야함
+        global payment_dic
+
+        # 여기도 쿠키로 값을 만들어서 해야함
         payment = get_object_or_404(
-            Payments, buyer=request.user, paid=False, kakao_tid__isnull=False
+            Payments, pk=payment_dic[request.user], paid=False, kakao_tid__isnull=False
         )
         id = payment.pk
         user = payment.buyer.phone_number
@@ -117,8 +139,12 @@ class KakaoPayApprovalView(APIView):
         return Response(data)
 
     def get(self, request):
+
         try:
-            obj = Payments.objects.get(buyer=request.user, paid=True)
+            # TODO: Task1. 프론트 생기면 해당 작업 수정 
+            # global 딕셔너리 사용 -> 프론트 생기면 수정해야함
+            global payment_dic
+            obj = Payments.objects.get(payment_dic[request.user], paid=True)
             serializer = KakaoPayApprovalSerializer(obj)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Payments.DoesNotExist:

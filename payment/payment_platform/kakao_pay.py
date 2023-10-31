@@ -2,6 +2,7 @@ from django.conf import settings
 import requests
 from django.shortcuts import redirect
 from payment.models import Payments
+from auction.models import AuctionRoom
 import datetime
 
 BASE_URL = settings.BASE_URL
@@ -49,10 +50,8 @@ class KakaoPay(object):
             kakao_tid=res.json()["tid"],
         )
         payment_try.save()
-        payment_try = Payments.objects.get(pk=id)
 
-        next_url = res.json()["next_redirect_pc_url"]
-        self.next_url = next_url
+        self.next_url = res.json()["next_redirect_pc_url"]
 
         return self.next_url
 
@@ -72,7 +71,7 @@ class KakaoPay(object):
             "pg_token": request.data["pg_token"],
         }
         res = requests.post(URL, headers=headers, params=data).json()
-        print(res)
+        # print(res)
 
         try:
             payment = Payments.objects.get(pk=id, paid=False)
@@ -80,6 +79,7 @@ class KakaoPay(object):
             payment.payment_type = "카카오페이"
             payment.payment_date = res["approved_at"]
             payment.save()
+
         except:
             print("Kakao pay approval fail")
 
