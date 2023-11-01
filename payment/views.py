@@ -20,7 +20,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 # 프론트 세션,쿠키,캐시 대용
-payment_dic = {}
+PAYMENT_DIC = {}
 
 
 class WinningdBidListView(APIView):
@@ -34,14 +34,12 @@ class WinningdBidListView(APIView):
                 expired_payments.delete()
 
         # 사용자의 낙찰 목록 중 아직 지불되지 않은 낙찰 목록 필터링
-        winning_bids = Payments.objects.filter(buyer=request.user)
-        winning_auction = AuctionRoom.objects.filter(auction_winner=request.user)
+        winning_auction = AuctionRoom.objects.filter(
+            auction_winner=request.user, payment_active=False
+        )
 
-        if len(winning_bids) != len(winning_auction):
-            # 낙찰 목록이 없으면, 선택한 경매 방 (`AuctionRoom`)의 ID를 가져와서 Payment를 생성하는 샐러리 작업 실행
-            room_ids = AuctionRoom.objects.filter(
-                auction_winner=request.user
-            ).values_list("pk", flat=True)
+        if winning_auction:
+            room_ids = winning_auction.values_list("pk", flat=True)
 
             for room_id in room_ids:
                 try:
@@ -66,8 +64,8 @@ class KakaoPayReady(APIView):
     def post(self, request):
         payment_id = request.data.get("paymentId")
         ##### TODO: Task1  프론트 생기면 해당 작업 수정
-        global payment_dic
-        payment_dic[request.user] = payment_id
+        global PAYMENT_DIC
+        PAYMENT_DIC[request.user] = payment_id
         ####
 
         payment = get_object_or_404(Payments, pk=payment_id)
@@ -100,11 +98,11 @@ class KakaoPayReady(APIView):
     def get(self, request):
         # TODO: Task1. 프론트 생기면 해당 작업 수정
         # global 딕셔너리 사용 -> 프론트 생기면 수정해야함
-        global payment_dic
+        global PAYMENT_DIC
 
-        if payment_dic[request.user]:
+        if PAYMENT_DIC[request.user]:
             try:
-                obj = Payments.objects.get(pk=payment_dic[request.user], paid=False)
+                obj = Payments.objects.get(pk=PAYMENT_DIC[request.user], paid=False)
                 serializer = KakaoPayReadySerializer(obj)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Payments.DoesNotExist:
@@ -123,11 +121,10 @@ class KakaoPayApprovalView(APIView):
     def post(self, request):
         # TODO: Task1. 프론트 생기면 해당 작업 수정
         # global 딕셔너리 사용 -> 프론트 생기면 수정해야함
-        global payment_dic
+        global PAYMENT_DIC
 
-        # 여기도 쿠키로 값을 만들어서 해야함
         payment = get_object_or_404(
-            Payments, pk=payment_dic[request.user], paid=False, kakao_tid__isnull=False
+            Payments, pk=PAYMENT_DIC[request.user], paid=False, kakao_tid__isnull=False
         )
         id = payment.pk
         user = payment.buyer.phone_number
@@ -148,8 +145,8 @@ class KakaoPayApprovalView(APIView):
         try:
             # TODO: Task1. 프론트 생기면 해당 작업 수정
             # global 딕셔너리 사용 -> 프론트 생기면 수정해야함
-            global payment_dic
-            obj = Payments.objects.get(payment_dic[request.user], paid=True)
+            global PAYMENT_DIC
+            obj = Payments.objects.get(PAYMENT_DIC[request.user], paid=True)
             serializer = KakaoPayApprovalSerializer(obj)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Payments.DoesNotExist:
@@ -164,6 +161,8 @@ class KakaoPayApprovalView(APIView):
 
 
 class KakaoPayCancelView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         data = {"message": "Payment Cancel."}
         serializer = KakaoCancelSerializer(data)
@@ -171,6 +170,8 @@ class KakaoPayCancelView(APIView):
 
 
 class KakaoPayFailView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         data = {"message": "Payment Fail."}
         serializer = KakaoFailSerializer(data)

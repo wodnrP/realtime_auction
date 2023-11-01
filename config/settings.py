@@ -125,7 +125,8 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     )
 }
-CORS_ALLOWED_ORIGINS = ["http://localhost:5500"]
+CORS_ALLOWED_ORIGINS = ["http://localhost:5500", "http://127.0.0.1:5500"]
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
@@ -220,4 +221,4 @@ BASE_URL = "http://127.0.0.1:8000"
 
 # Kakao Pay
 KAKAO_PAY = env("KAKAO_PAY")
-CSRF_TRUSTED_ORIGINS = ["http://localhost:5500"]
+CSRF_TRUSTED_ORIGINS = ["http://localhost:5500", "http://127.0.0.1/:5500"]
