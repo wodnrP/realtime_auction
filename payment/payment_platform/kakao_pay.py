@@ -62,7 +62,7 @@ class KakaoPay(object):
             "Authorization": "KakaoAK " + KAKAO_PAY,
             "Content-type": "application/x-www-form-urlencoded;charset=utf-8",
         }
-        print(request)
+        
         data = {
             "cid": "TC0ONETIME",  # test code
             "tid": tid,
@@ -71,7 +71,7 @@ class KakaoPay(object):
             "pg_token": request.data["pg_token"],
         }
         res = requests.post(URL, headers=headers, params=data).json()
-        # print(res)
+        
 
         try:
             payment = Payments.objects.get(pk=id, paid=False)
