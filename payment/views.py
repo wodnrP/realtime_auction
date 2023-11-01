@@ -65,9 +65,10 @@ class KakaoPayReady(APIView):
         payment_id = request.data.get("paymentId")
         ##### TODO: Task1  프론트 생기면 해당 작업 수정
         global PAYMENT_DIC
-        PAYMENT_DIC[request.user] = payment_id
+        PAYMENT_DIC[str(request.user)] = payment_id
+        print(f"kakao ready - PAYMENT_DIC: {PAYMENT_DIC}, {request.user}")
         ####
-
+        
         payment = get_object_or_404(Payments, pk=payment_id)
         id = payment.pk
         user = payment.buyer
@@ -100,9 +101,9 @@ class KakaoPayReady(APIView):
         # global 딕셔너리 사용 -> 프론트 생기면 수정해야함
         global PAYMENT_DIC
 
-        if PAYMENT_DIC[request.user]:
+        if PAYMENT_DIC[str(request.user)]:
             try:
-                obj = Payments.objects.get(pk=PAYMENT_DIC[request.user], paid=False)
+                obj = Payments.objects.get(pk=PAYMENT_DIC[str(request.user)], paid=False)
                 serializer = KakaoPayReadySerializer(obj)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             except Payments.DoesNotExist:
@@ -122,9 +123,9 @@ class KakaoPayApprovalView(APIView):
         # TODO: Task1. 프론트 생기면 해당 작업 수정
         # global 딕셔너리 사용 -> 프론트 생기면 수정해야함
         global PAYMENT_DIC
-
+        print(f"kakao ready - PAYMENT_DIC: {PAYMENT_DIC}, {request.user}")
         payment = get_object_or_404(
-            Payments, pk=PAYMENT_DIC[request.user], paid=False, kakao_tid__isnull=False
+            Payments, pk=PAYMENT_DIC[str(request.user)], paid=False, kakao_tid__isnull=False
         )
         id = payment.pk
         user = payment.buyer.phone_number
@@ -146,7 +147,7 @@ class KakaoPayApprovalView(APIView):
             # TODO: Task1. 프론트 생기면 해당 작업 수정
             # global 딕셔너리 사용 -> 프론트 생기면 수정해야함
             global PAYMENT_DIC
-            obj = Payments.objects.get(PAYMENT_DIC[request.user], paid=True)
+            obj = Payments.objects.get(PAYMENT_DIC[str(request.user)], paid=True)
             serializer = KakaoPayApprovalSerializer(obj)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Payments.DoesNotExist:
