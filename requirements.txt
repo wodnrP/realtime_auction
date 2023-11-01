@@ -37,7 +37,7 @@ djangorestframework-simplejwt==5.3.0
 dnspython==2.4.2
 flower==2.0.1
 gevent==23.9.1
-greenlet==2.0.2
+greenlet>=2.0
 hiredis==2.2.3
 humanize==4.8.0
 hyperlink==21.0.0
@@ -69,6 +69,7 @@ sqlparse==0.2.4
 tomli==2.0.1
 tornado==6.3.3
 Twisted==23.8.0
+twisted-iocpsupport==1.0.4
 txaio==23.1.1
 typing_extensions==4.7.1
 tzdata==2023.3

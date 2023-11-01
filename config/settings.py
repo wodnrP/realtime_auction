@@ -93,6 +93,14 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+# celery 추가 작업 - chat
+CELERY_BEAT_SCHEDULE.update({
+    'create_chatting_task': {
+        'task': 'chat.tasks.create_chatting_for_completed_auctions',
+        'schedule': timedelta(seconds=10)
+    },
+})
+
 CELERY_ALWAYS_EAGER = True
 CELERY_BROKER_URL = "redis://127.0.0.1:6379"
 CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379"
