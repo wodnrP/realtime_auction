@@ -30,7 +30,8 @@ class WinningdBidListView(APIView):
         # 2일 지나도 결제가 안된 상품 payment에서 삭제
         expired_payments = Payments.objects.filter(buyer=request.user, paid=False)
         for payment in expired_payments:
-            if payment.payment_date + timedelta(minutes=5) <= timezone.now():
+            # TODO : 현재 테스트로 15분 설정 -> 추후 2일로 변경해야함
+            if payment.payment_date + timedelta(minutes=15) <= timezone.now():
                 expired_payments.delete()
 
         # 사용자의 낙찰 목록 중 아직 지불되지 않은 낙찰 목록 필터링
