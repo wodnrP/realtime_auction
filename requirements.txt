@@ -37,7 +37,7 @@ djangorestframework-simplejwt==5.3.0
 dnspython==2.4.2
 flower==2.0.1
 gevent==23.9.1
-greenlet==2.0.2
+greenlet>=2.0
 hiredis==2.2.3
 humanize==4.8.0
 hyperlink==21.0.0
@@ -78,3 +78,12 @@ vine==5.0.0
 wcwidth==0.2.6
 zope.event==5.0
 zope.interface==6.0
+
+# mac os
+#twisted-iocpsupport==1.0.4
+
+# windows os
+#twisted-iocpsupport==1.0.4
+
+# linux os
+#twisted-iocpsupport==1.0.4
