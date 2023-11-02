@@ -46,6 +46,8 @@ class AuctionRoom(models.Model):
         default=False, verbose_name="경매 활성화 여부"
     )  # 경매 시작 시 True, 경매 종료 시 False
 
+    payment_active = models.BooleanField(default=False)
+
     def save(self, *args, **kwargs):
         # 경매 종료 시간이 경매 시작 시간보다 빠를 경우, 에러를 발생시킵니다.
         if (

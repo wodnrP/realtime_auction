@@ -43,8 +43,7 @@ INSTALLED_APPS = [
     "channels",
     "django_celery_beat",
     "django_celery_results",
-    'corsheaders',
-    
+    "corsheaders",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -90,8 +89,7 @@ CHANNEL_LAYERS = {
 CELERY_BEAT_SCHEDULE = {
     "check-auction-start-times": {
         "task": "auction.tasks.check_and_create_auction_rooms",
-        'schedule': timedelta(seconds=10)
-
+        "schedule": timedelta(seconds=10),
     },
 }
 
@@ -104,15 +102,15 @@ CELERY_BEAT_SCHEDULE.update({
 })
 
 CELERY_ALWAYS_EAGER = True
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379'
-CELERY_ACCEPT_CONTENT = ['application/json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'Asia/Seoul'
+CELERY_BROKER_URL = "redis://127.0.0.1:6379"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379"
+CELERY_ACCEPT_CONTENT = ["application/json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "Asia/Seoul"
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', 
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -127,7 +125,8 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     )
 }
-CORS_ORIGIN_WHITELIST = ["http://localhost:5500"]
+CORS_ALLOWED_ORIGINS = ["http://localhost:5500", "http://127.0.0.1:5500"]
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
@@ -217,3 +216,9 @@ AUTH_USER_MODEL = "user.User"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+BASE_URL = "http://127.0.0.1:8000"
+
+# Kakao Pay
+KAKAO_PAY = env("KAKAO_PAY")
+CSRF_TRUSTED_ORIGINS = ["http://localhost:5500", "http://127.0.0.1/:5500"]
