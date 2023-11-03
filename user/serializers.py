@@ -77,13 +77,14 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         # 마지막에 받은 패널티 시간 3일 후 제약 해제
-        buy_penalty_check = Penalty.objects.filter(user_id=user, penalty_type = 'buy')
-        sell_penalty_check = Penalty.objects.filter(user_id=user,penalty_type = 'sell')
-        if buy_penalty_check.exists():
-            if buy_penalty_check.last().penalty_date + timedelta(days=3) <= timezone.now():
+        if not user.can_buy:
+            buy_penalty_check = Penalty.objects.filter(user_id=user, penalty_type = 'buy').last()
+            if buy_penalty_check.penalty_date + timedelta(days=3) <= timezone.now():
                 user.can_buy = True
-        if sell_penalty_check.exists():
-            if sell_penalty_check.last().penalty_date + timedelta(days=3) <= timezone.now():
+                
+        if not user.can_sell:
+            sell_penalty_check = Penalty.objects.filter(user_id=user,penalty_type = 'sell').last()
+            if sell_penalty_check.penalty_date + timedelta(days=3) <= timezone.now():
                 user.can_sell = True
         user.save()
         
