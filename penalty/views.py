@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from penalty.serializers import PenaltySerializer
 from penalty.models import Penalty
+from user.models import User
 
 
 class PenaltyView(APIView):
@@ -22,7 +23,8 @@ class PenaltyView(APIView):
 
     def post(self, request, user_id):
         serializer = PenaltySerializer(data=request.data)
+        penalty_user = User.objects.get(id=user_id)
         if serializer.is_valid():
-            serializer.save(user_id=request.user)
+            serializer.save(user_id=penalty_user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
