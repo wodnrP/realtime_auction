@@ -92,11 +92,6 @@ CELERY_BEAT_SCHEDULE = {
         "task": "auction.tasks.check_and_create_auction_rooms",
         "schedule": timedelta(seconds=10),
     },
-    
-    "check_and_give_buy_penalty": {
-        "task": "penalty.tasks.check_and_give_buy_penalty",
-        "schedule": crontab(minute=0, hour=0),
-    },
 }
 
 # celery 추가 작업 - chat
