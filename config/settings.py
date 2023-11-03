@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 import environ
 from datetime import timedelta
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 
@@ -90,6 +91,11 @@ CELERY_BEAT_SCHEDULE = {
     "check-auction-start-times": {
         "task": "auction.tasks.check_and_create_auction_rooms",
         "schedule": timedelta(seconds=10),
+    },
+    
+    "check_and_give_buy_penalty": {
+        "task": "penalty.tasks.check_and_give_buy_penalty",
+        "schedule": crontab(minute=0, hour=0),
     },
 }
 
