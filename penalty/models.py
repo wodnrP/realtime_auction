@@ -20,8 +20,10 @@ class BuyPenaltyReason(models.Model):
     def update_user_access(sender, instance, created, **kwargs):
         if created:
             penalty = Penalty.objects.get(id=instance.penalty_id)
+            penalty.buy_penalty += 1
+            penalty.save()
+            
             user = penalty.user_id
-
             if user.can_buy & (penalty.buy_penalty >= 3):
                 user.can_buy = False
                 user.save()
@@ -36,8 +38,10 @@ class SellPenaltyReason(models.Model):
     def update_user_access(sender, instance, created, **kwargs):
         if created:
             penalty = Penalty.objects.get(id=instance.penalty_id)
-            user = penalty.user_id
+            penalty.sell_penalty += 1
+            penalty.save()
 
+            user = penalty.user_id
             if user.can_sell & (penalty.sell_penalty >= 3):
                 user.can_sell = False
                 user.save()
