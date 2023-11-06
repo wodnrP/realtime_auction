@@ -1,12 +1,9 @@
 from django.contrib import admin
-from penalty.models import Penalty
+from penalty.models import Penalty, BuyPenaltyReason, SellPenaltyReason
 
 
-@admin.register(Penalty)
-class PenaltyAdmin(admin.ModelAdmin):
-    list_display = [
-        "user_id",
-        "penalty_type",
-        "penalty_content",
-        "penalty_date",
-    ]
+admin.site.register(Penalty)
+admin.site.register(BuyPenaltyReason)
+admin.site.register(SellPenaltyReason)
+    
+
