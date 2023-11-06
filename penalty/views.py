@@ -4,8 +4,11 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ObjectDoesNotExist
 
-from penalty.serializers import (PenaltySerializer, 
-                                 BuyPenaltyReasonSerializer, SellPenaltyReasonSerializer)
+from penalty.serializers import (
+    PenaltySerializer,
+    BuyPenaltyReasonSerializer,
+    SellPenaltyReasonSerializer,
+)
 from penalty.models import Penalty
 from user.models import User
 
@@ -23,28 +26,29 @@ class PenaltyView(APIView):
         serializer = PenaltySerializer(penalty, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class BuyPenaltyReasonView(APIView):
     permission_classes = [IsAuthenticated]
-    def post(self,request,user_id):
+
+    def post(self, request, user_id):
         user = User.objects.get(id=user_id)
-        penalty,created = Penalty.objects.get_or_create(user_id=user)
+        penalty, created = Penalty.objects.get_or_create(user_id=user)
         serializer = BuyPenaltyReasonSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(penalty_id=penalty)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class SellPenaltyReasonView(APIView):
     permission_classes = [IsAuthenticated]
-    def post(self,request,user_id):
+
+    def post(self, request, user_id):
         user = User.objects.get(id=user_id)
-        penalty,created = Penalty.objects.get_or_create(user_id=user)
+        penalty, created = Penalty.objects.get_or_create(user_id=user)
         serializer = SellPenaltyReasonSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(penalty_id=penalty)
-            
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        
-        

@@ -1,15 +1,15 @@
 from rest_framework import serializers
-from penalty.models import Penalty,BuyPenaltyReason,SellPenaltyReason
+from penalty.models import Penalty, BuyPenaltyReason, SellPenaltyReason
 
 
 class PenaltySerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Penalty
         fields = "__all__"
         read_only_fields = [
             "user_id",
         ]
+
 
 class BuyPenaltyReasonSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,6 +18,7 @@ class BuyPenaltyReasonSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "penalty_id",
         ]
+
 
 class SellPenaltyReasonSerializer(serializers.ModelSerializer):
     class Meta:
