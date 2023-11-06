@@ -6,7 +6,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from user.models import User
-from penalty.models import Penalty, BuyPenaltyReason, SellPenaltyReason
+from penalty.models import Penalty
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -79,11 +79,11 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         # 마지막에 받은 패널티 시간 3일 후 제약 해제
         if not user.can_buy:
             penalty = Penalty.objects.prefetch_related('buypenaltyreason_set').get(user_id=user)
-            if penalty.buypenaltyreason_set.last().penalty_date + timedelta(seconds=30) <= timezone.now():
+            if penalty.buypenaltyreason_set.last().penalty_date + timedelta(days=3) <= timezone.now():
                 user.can_buy = True
                 
         if not user.can_sell:
-            enalty = Penalty.objects.prefetch_related('sellpenaltyreason_set').get(user_id=user)
+            penalty = Penalty.objects.prefetch_related('sellpenaltyreason_set').get(user_id=user)
             if penalty.sellpenaltyreason_set.last().penalty_date + timedelta(days=3) <= timezone.now():
                 user.can_sell = True
         user.save()
