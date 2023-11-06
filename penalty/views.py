@@ -3,7 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 
-from penalty.serializers import PenaltySerializer
+from penalty.serializers import (PenaltySerializer, 
+                                 BuyPenaltyReasonSerializer, SellPenaltyReasonSerializer)
 from penalty.models import Penalty
 from user.models import User
 
@@ -17,14 +18,29 @@ class PenaltyView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, user_id):
-        penalties = Penalty.objects.filter(user_id=user_id)
-        serializer = PenaltySerializer(penalties, many=True)
+        penalty = Penalty.objects.get(user_id=user_id)
+        serializer = PenaltySerializer(penalty, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def post(self, request, user_id):
-        serializer = PenaltySerializer(data=request.data)
-        penalty_user = User.objects.get(id=user_id)
+class BuyPenaltyReasonView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self,request,user_id):
+        penalty = Penalty.objects.get(user_id=user_id)
+        serializer = BuyPenaltyReasonSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user_id=penalty_user)
+            serializer.save(penalty_id=penalty)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class SellPenaltyReasonView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self,request,user_id):
+        penalty = Penalty.objects.get(user_id=user_id)
+        serializer = SellPenaltyReasonSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(penalty_id=penalty)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        
+        

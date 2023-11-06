@@ -4,35 +4,37 @@ from django.dispatch import receiver
 
 from user.models import User
 
-
 class Penalty(models.Model):
-    class PeanaltyTypeChoice(models.TextChoices):
-        BUY = "buy", "구매"
-        SELL = "sell", "판매"
+    user_id = models.OneToOneField(User, on_delete=models.CASCADE)
+    buy_penalty = models.PositiveSmallIntegerField(default=0)
+    sell_penalty= models.PositiveSmallIntegerField(default=0)
 
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
-    penalty_type = models.CharField(max_length=4, choices=PeanaltyTypeChoice.choices)
-    penalty_content = models.TextField()
+class BuyPenaltyReason(models.Model):
+    penalty_id = models.ForeignKey(Penalty, on_delete=models.CASCADE)
     penalty_date = models.DateTimeField(auto_now_add=True)
-
-    @receiver(post_save, sender="penalty.Penalty")
+    reason = models.CharField()
+    
+    @receiver(post_save, sender="penalty.BuyPenaltyReason")
     def update_user_access(sender, instance, created, **kwargs):
         if created:
-            user = User.objects.get(id=instance.user_id.id)
-            buy_penalty = Penalty.objects.filter(
-                user_id=instance.user_id.id, penalty_type="buy"
-            ).count()
-            sell_penalty = Penalty.objects.filter(
-                user_id=instance.user_id.id, penalty_type="sell"
-            ).count()
-            # user.can_buy가 true이고, 패널티의 개수가 3개 이상일 때 구매 불가 상태로 변경
-            if instance.penalty_type == "buy":
-                if user.can_buy & (buy_penalty >= 3):
-                    user.can_buy = False
+            penalty = Penalty.objects.get(id=instance.penalty_id)
+            user = penalty.user_id
+            
+            if user.can_buy & (penalty.buy_penalty >= 3):
+                user.can_buy = False
+                user.save()
 
-            # user.can_sell가 true이고, 패널티의 개수가 3개 이상일 때 판매 불가 상태로 변경
-            elif instance.penalty_type == "sell":
-                if user.can_sell & (sell_penalty >= 3):
-                    user.can_sell = False
+class SellPenaltyReason(models.Model):
+    penalty_id = models.ForeignKey(Penalty, on_delete=models.CASCADE)
+    penalty_date = models.DateTimeField(auto_now_add=True)
+    reason = models.CharField()
 
-            user.save()
+    @receiver(post_save, sender="penalty.SellPenaltyReason")
+    def update_user_access(sender, instance, created, **kwargs):
+        if created:
+            penalty = Penalty.objects.get(id=instance.penalty_id)
+            user = penalty.user_id
+            
+            if user.can_sell & (penalty.sell_penalty >= 3):
+                user.can_sell = False
+                user.save()
