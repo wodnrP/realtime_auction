@@ -19,7 +19,7 @@ class BuyPenaltyReason(models.Model):
     @receiver(post_save, sender="penalty.BuyPenaltyReason")
     def update_user_access(sender, instance, created, **kwargs):
         if created:
-            penalty = Penalty.objects.get(id=instance.penalty_id)
+            penalty = Penalty.objects.get(id=instance.penalty_id.id)
             penalty.buy_penalty += 1
             penalty.save()
             
@@ -37,7 +37,7 @@ class SellPenaltyReason(models.Model):
     @receiver(post_save, sender="penalty.SellPenaltyReason")
     def update_user_access(sender, instance, created, **kwargs):
         if created:
-            penalty = Penalty.objects.get(id=instance.penalty_id)
+            penalty = Penalty.objects.get(id=instance.penalty_id.id)
             penalty.sell_penalty += 1
             penalty.save()
 
