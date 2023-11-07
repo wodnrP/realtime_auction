@@ -38,7 +38,7 @@ class WinningdBidListView(APIView):
                     penalty_id = penalty,
                     reason=f'{payment.product_name}의 결제 가능 기한이 지났습니다'
                 )
-                penalty.buy_penalty += 1
+
                 payment.delete()
 
         # 사용자의 낙찰 목록 중 아직 지불되지 않은 낙찰 목록 필터링
