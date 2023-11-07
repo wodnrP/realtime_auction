@@ -13,7 +13,7 @@ from .serializers import (
 from rest_framework.response import Response
 from payment.tasks import create_payment_for_auction_winner  # Celery 작업 가져오기
 from auction.models import AuctionRoom
-from penalty.models import Penalty
+from penalty.models import Penalty, BuyPenaltyReason
 from rest_framework import status
 from payment.payment_platform.kakao_pay import KakaoPay
 import json
@@ -33,11 +33,12 @@ class WinningdBidListView(APIView):
         for payment in expired_payments:
             # TODO : 현재 테스트로 15분 설정 -> 추후 2일로 변경해야함
             if payment.payment_date + timedelta(minutes=15) <= timezone.now():
-                penalty = Penalty.objects.create(
-                        user_id=payment.buyer,
-                        penalty_type = 'buy',
-                        penalty_content = '결제 기한이 지났습니다.')
-                penalty.save()
+                penalty, created = Penalty.objects.get_or_create(user_id=payment.buyer)
+                BuyPenaltyReason.objects.create(
+                    penalty_id = penalty,
+                    reason=f'{payment.product_name}의 결제 가능 기한이 지났습니다'
+                )
+                penalty.buy_penalty += 1
                 payment.delete()
 
         # 사용자의 낙찰 목록 중 아직 지불되지 않은 낙찰 목록 필터링

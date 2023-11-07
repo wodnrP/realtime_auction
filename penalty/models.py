@@ -14,7 +14,7 @@ class Penalty(models.Model):
 class BuyPenaltyReason(models.Model):
     penalty_id = models.ForeignKey(Penalty, on_delete=models.CASCADE)
     penalty_date = models.DateTimeField(auto_now_add=True)
-    reason = models.CharField()
+    reason = models.CharField(max_length=255)
 
     @receiver(post_save, sender="penalty.BuyPenaltyReason")
     def update_user_access(sender, instance, created, **kwargs):
@@ -32,7 +32,7 @@ class BuyPenaltyReason(models.Model):
 class SellPenaltyReason(models.Model):
     penalty_id = models.ForeignKey(Penalty, on_delete=models.CASCADE)
     penalty_date = models.DateTimeField(auto_now_add=True)
-    reason = models.CharField()
+    reason = models.CharField(max_length=255)
 
     @receiver(post_save, sender="penalty.SellPenaltyReason")
     def update_user_access(sender, instance, created, **kwargs):
