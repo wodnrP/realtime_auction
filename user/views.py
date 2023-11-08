@@ -1,5 +1,7 @@
 import random
 
+from datetime import timedelta
+from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth import authenticate
@@ -16,6 +18,8 @@ from user.serializers import (
     MyTokenObtainPairSerializer,
     LogoutSerializer,
 )
+from penalty.models import Penalty, BuyPenaltyReason
+from payment.models import Payments
 
 from user.naver_sms.utils import make_signature, send_sms
 
@@ -113,6 +117,18 @@ class LoginView(APIView):
         user = authenticate(phone_number=phone_number, password=password)
 
         if user.is_authenticated:
+                   # 2일 지나도 결제가 안된 상품 payment에서 삭제
+            expired_payments = Payments.objects.filter(buyer=request.user, paid=False)
+            for payment in expired_payments:
+                # TODO : 현재 테스트로 15분 설정 -> 추후 2일로 변경해야함
+                if payment.payment_date + timedelta(minutes=15) <= timezone.now():
+                    penalty, created = Penalty.objects.get_or_create(user_id=payment.buyer)
+                    BuyPenaltyReason.objects.create(
+                        penalty_id = penalty,
+                        reason=f'{payment.product_name}의 결제 가능 기한이 지났습니다'
+                    )
+
+                payment.delete()
             token = MyTokenObtainPairSerializer.get_token(user)
             refresh_token = str(token)
             access_token = str(token.access_token)
