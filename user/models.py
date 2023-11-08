@@ -35,7 +35,9 @@ class User(AbstractBaseUser):
         upload_to="profile_image", blank=True, verbose_name="프로필 사진"
     )
     is_admin = models.BooleanField(default=False, verbose_name="관리자 권한")
-
+    can_buy = models.BooleanField(default=True, verbose_name="구매 가능 권한")
+    can_sell = models.BooleanField(default=True, verbose_name="판매 가능 권한")
+    
     objects = UserManager()
 
     # custom user 모델을 기본 유저 모델로 설정하려면 username field 필수 > unique 한 값

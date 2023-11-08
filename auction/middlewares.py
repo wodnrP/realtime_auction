@@ -4,8 +4,6 @@ from django.contrib.auth.models import AnonymousUser
 from rest_framework_simplejwt.tokens import AccessToken, TokenError
 from channels.middleware import BaseMiddleware
 
-from rest_framework_simplejwt.authentication import JWTAuthentication
-
 User = get_user_model()
 
 

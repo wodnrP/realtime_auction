@@ -57,9 +57,13 @@ class NewProductView(APIView):
 
     Errors:
     - 400 Bad Request: 요청 데이터가 유효하지 않은 경우
+    - 403 Forbidden : 현재 판매 활동이 불가능 한 경우
     """
 
     def post(self, request):
+        if not request.user.can_sell:
+            return Response({"error":"현재 판매 활동이 불가능 합니다."},status=status.HTTP_403_FORBIDDEN)
+            
         serializer = ProductsSerializer(data=request.data)
         if serializer.is_valid():
             current_date = serializer.validated_data["auction_start_at"]
