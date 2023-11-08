@@ -37,6 +37,15 @@ class Report(models.Model):
         blank=True,
     )
 
+    reported_message = models.ForeignKey(
+        "chat.Message",
+        on_delete=models.CASCADE,
+        related_name="reports",
+        null=True,
+        blank=True,
+        verbose_name="신고 된 메세지",
+    )
+
     report_type = models.CharField(
         choices=ReportTypeChoices.choices,
         max_length=30,
@@ -50,7 +59,7 @@ class Report(models.Model):
     report_content = models.TextField()
 
     def __str__(self):
-        return self.report_type
+        return f"Report {self.pk} by {self.report_chatting_room},{self.reporter}"
 
     class Meta:
         verbose_name_plural = "Report"

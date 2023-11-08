@@ -94,12 +94,14 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 # celery 추가 작업 - chat
-CELERY_BEAT_SCHEDULE.update({
-    'create_chatting_task': {
-        'task': 'chat.tasks.create_chatting_for_completed_auctions',
-        'schedule': timedelta(seconds=10)
-    },
-})
+CELERY_BEAT_SCHEDULE.update(
+    {
+        "create_chatting_task": {
+            "task": "chat.tasks.create_chatting_for_completed_auctions",
+            "schedule": timedelta(seconds=10),
+        },
+    }
+)
 
 CELERY_ALWAYS_EAGER = True
 CELERY_BROKER_URL = "redis://127.0.0.1:6379"
@@ -221,4 +223,4 @@ BASE_URL = "http://127.0.0.1:8000"
 
 # Kakao Pay
 KAKAO_PAY = env("KAKAO_PAY")
-CSRF_TRUSTED_ORIGINS = ["http://localhost:5500", "http://127.0.0.1/:5500"]
+# CSRF_TRUSTED_ORIGINS = ["http://localhost:5500", "http://127.0.0.1:5500"]
