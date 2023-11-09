@@ -14,8 +14,8 @@ class AuctionConsumer(AsyncWebsocketConsumer):
         self.room_group_name = f"auction_{self.room_name}"
         self.user = self.scope["user"]
 
-        # 로그인 된 사용자만 채팅에 참여 가능
-        if not self.user.is_authenticated:
+        # 로그인 된 사용자와 활동이 가능한 유저만 채팅에 참여 가능
+        if (not self.user.is_authenticated)|(not self.user.can_buy):
             await self.close()
 
         host = await self.get_auction_room()

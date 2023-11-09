@@ -24,6 +24,8 @@ def check_and_create_auction_rooms():
             if auction_room_check.auction_end_at <= timezone.now():
                 auction_room_check.auction_active = False
                 auction_room_check.save()
+                product.product_active = False
+                product.save()
             
         except:
             #product 등록 시 auction_end_at을 지정하지 않았다면 default값으로 설정

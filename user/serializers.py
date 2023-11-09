@@ -1,10 +1,12 @@
 import re
-
+from datetime import timedelta
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from user.models import User
+from penalty.models import Penalty
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -74,6 +76,18 @@ class PhoneNumberSerializer(serializers.ModelSerializer):
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
+        # 마지막에 받은 패널티 시간 3일 후 제약 해제
+        if not user.can_buy:
+            penalty = Penalty.objects.prefetch_related('buypenaltyreason_set').get(user_id=user)
+            if penalty.buypenaltyreason_set.last().penalty_date + timedelta(days=3) <= timezone.now():
+                user.can_buy = True
+                
+        if not user.can_sell:
+            penalty = Penalty.objects.prefetch_related('sellpenaltyreason_set').get(user_id=user)
+            if penalty.sellpenaltyreason_set.last().penalty_date + timedelta(days=3) <= timezone.now():
+                user.can_sell = True
+        user.save()
+        
         token = super().get_token(user)
         token["phone_number"] = user.phone_number
         return token
