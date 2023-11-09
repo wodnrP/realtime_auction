@@ -9,6 +9,8 @@ class Chatting(models.Model):
         verbose_name="연결된 경매"
     )
     
+    def __str__(self):
+        return str(self.auction_id)
 
 class Message(models.Model):
     chatting_id=models.ForeignKey(

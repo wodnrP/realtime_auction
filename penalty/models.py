@@ -5,12 +5,6 @@ from django.dispatch import receiver
 from user.models import User
 
 
-class Penalty(models.Model):
-    user_id = models.OneToOneField(User, on_delete=models.CASCADE)
-    buy_penalty = models.PositiveSmallIntegerField(default=0)
-    sell_penalty = models.PositiveSmallIntegerField(default=0)
-
-
 class BuyPenaltyReason(models.Model):
     penalty_id = models.ForeignKey(Penalty, on_delete=models.CASCADE)
     penalty_date = models.DateTimeField(auto_now_add=True)
